@@ -20,5 +20,8 @@ func getFlagSet() *flag.FlagSet {
 	fs.String("slack_token", "", "Slack Token")
 	fs.String("slack_channels", "", "Slack channels for the user to join")
 
+	// Address
+	fs.String("http_address", "127.0.0.1:80", "HTTP Address to bind to")
+
 	return fs
 }

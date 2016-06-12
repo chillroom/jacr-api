@@ -33,8 +33,10 @@ func main() {
 		return
 	}
 
+	address := fs.Lookup("http_address").Value.String()
+
 	router := gin.Default()
 	router.POST("/invite", slackHandler)
 
-	http.ListenAndServe("127.0.0.1:80", router)
+	http.ListenAndServe(address, router)
 }
