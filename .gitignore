@@ -1,2 +1,6 @@
 *.conf
 !example_api.conf
+.pm2_*
+
+jacr-api.exe
+jacr-api
