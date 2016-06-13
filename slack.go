@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"net/url"
+	"strconv"
 )
 
 var generalSlackResponses = map[string]string{
@@ -14,14 +15,8 @@ var generalSlackResponses = map[string]string{
 }
 
 func slackHandler(c *gin.Context) {
-	origin := c.Request.Header.Get("Origin")
-	parsedOrigin, err := url.Parse(origin)
-	if err != nil {
+	if !checkJACROrigin(c) {
 		return
-	}
-
-	if (parsedOrigin.Host == "just-a-chill-room.net") || (parsedOrigin.Host == "www.just-a-chill-room.net") {
-		c.Header("Access-Control-Allow-Origin", origin)
 	}
 
 	email, _ := c.GetPostForm("email")
@@ -90,4 +85,59 @@ func slackHandler(c *gin.Context) {
 		"code":    "slack_error",
 		"message": data.Error,
 	})
+}
+
+func slackImageHandler(c *gin.Context) {
+	if !checkJACROrigin(c) {
+		return
+	}
+
+	v := url.Values{}
+	v.Set("token", conf.SlackToken)
+	v.Set("presence", "1")
+	resp, err := http.PostForm("https://"+conf.SlackURL+"/api/users.list", v)
+
+	if err != nil {
+		c.JSON(200, gin.H{
+			"status":  500,
+			"code":    "something_wrong",
+			"message": err.Error(),
+		})
+		return
+	}
+	defer resp.Body.Close()
+
+	data := struct {
+		Success bool `json:"ok"`
+		Members []struct {
+			Bot      bool   `json:"is_bot"`
+			Deleted  bool   `json:"deleted"`
+			Presence string `json:"presence"`
+		} `json:"members"`
+	}{}
+
+	err = json.NewDecoder(resp.Body).Decode(&data)
+	if (err != nil) || !data.Success {
+		c.JSON(200, gin.H{
+			"status":  500,
+			"code":    "something_wrong",
+			"message": "Something went wrong",
+		})
+		return
+	}
+
+	total := 0
+	online := 0
+	for _, member := range data.Members {
+		if !member.Bot && !member.Deleted {
+			total++
+			if member.Presence == "active" {
+				online++
+			}
+		}
+	}
+
+	// build the url
+	url := "https://img.shields.io/badge/slack-" + strconv.Itoa(online) + "%2F" + strconv.Itoa(total) + "%20active-46ccbb.svg?style=flat"
+	c.Redirect(302, url)
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"net/url"
 	"os"
 )
 
@@ -37,6 +38,21 @@ func main() {
 
 	router := gin.Default()
 	router.POST("/invite", slackHandler)
+	router.GET("/badge-social.svg", slackImageHandler)
 
 	http.ListenAndServe(address, router)
+}
+
+func checkJACROrigin(c *gin.Context) bool {
+	origin := c.Request.Header.Get("Origin")
+	parsedOrigin, err := url.Parse(origin)
+	if err != nil {
+		return false
+	}
+
+	if (parsedOrigin.Host == "just-a-chill-room.net") || (parsedOrigin.Host == "www.just-a-chill-room.net") {
+		c.Header("Access-Control-Allow-Origin", origin)
+		return true
+	}
+	return true
 }
