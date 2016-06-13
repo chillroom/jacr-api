@@ -26,7 +26,6 @@ func slackHandler(c *gin.Context) {
 	}
 
 	email, _ := c.GetPostForm("email")
-	fmt.Println("Email", email)
 
 	// No email? Tell them that.
 	if email == "" {
