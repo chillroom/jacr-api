@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	r "gopkg.in/dancannon/gorethink.v2"
 	"net/http"
 	"net/url"
 	"os"
@@ -14,9 +15,24 @@ var conf = struct {
 	SlackChannels string
 }{}
 
+var rethinkSession *r.Session
+
 func main() {
+	var err error
+
 	fs := getFlagSet()
 	fs.Parse(os.Args[1:])
+
+	rethinkSession, err = r.Connect(r.ConnectOpts{
+		Address:  fs.Lookup("rethinkdb_address").Value.String(),
+		Database: fs.Lookup("rethinkdb_database").Value.String(),
+		Username: fs.Lookup("rethinkdb_username").Value.String(),
+		Password: fs.Lookup("rethinkdb_password").Value.String(),
+	})
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
 
 	conf.SlackURL = fs.Lookup("slack_url").Value.String()
 	if conf.SlackURL == "" {
@@ -34,12 +50,15 @@ func main() {
 		return
 	}
 
-	address := fs.Lookup("http_address").Value.String()
-
 	router := gin.Default()
 	router.POST("/invite", slackHandler)
 	router.GET("/badge-social.svg", slackImageHandler)
+	motd := router.Group("/motd")
+	{
+		motd.GET("/list", motdListEndpoint)
+	}
 
+	address := fs.Lookup("http_address").Value.String()
 	http.ListenAndServe(address, router)
 }
 
