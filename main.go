@@ -53,10 +53,16 @@ func main() {
 	router := gin.Default()
 	router.POST("/invite", slackHandler)
 	router.GET("/badge-social.svg", slackImageHandler)
+
 	motd := router.Group("/motd")
 	{
 		motd.GET("/list", motdListEndpoint)
 	}
+
+	router.GET("/api/current-song", currentSongEndpoint)
+	router.GET("/api/op", opListEndpoint)
+	router.GET("/api/history", historyListEndpoint)
+	router.GET("/api/history/:user", historyUserListEndpoint)
 
 	address := fs.Lookup("http_address").Value.String()
 	http.ListenAndServe(address, router)
