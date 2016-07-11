@@ -5,7 +5,6 @@ import (
 	"github.com/gin-gonic/gin"
 	r "gopkg.in/dancannon/gorethink.v2"
 	"net/http"
-	"net/url"
 	"os"
 )
 
@@ -13,6 +12,8 @@ var conf = struct {
 	SlackURL      string
 	SlackToken    string
 	SlackChannels string
+
+	Address string
 }{}
 
 var rethinkSession *r.Session
@@ -50,34 +51,42 @@ func main() {
 		return
 	}
 
+	conf.Address = fs.Lookup("http_address").Value.String()
+
+	loadRoutes()
+}
+
+func loadRoutes() {
 	router := gin.Default()
+
 	router.POST("/invite", slackHandler)
 	router.GET("/badge-social.svg", slackImageHandler)
 
-	motd := router.Group("/motd")
+	/////////LEGACY
+	motd_legacy := router.Group("/motd")
 	{
-		motd.GET("/list", motdListEndpoint)
+		motd_legacy.GET("/list", motdListEndpoint)
 	}
 
 	router.GET("/api/current-song", currentSongEndpoint)
 	router.GET("/api/op", opListEndpoint)
 	router.GET("/api/history", historyListEndpoint)
 	router.GET("/api/history/:user", historyUserListEndpoint)
+	///////////////
 
-	address := fs.Lookup("http_address").Value.String()
-	http.ListenAndServe(address, router)
-}
+	authMiddleware := getAuthMiddleware()
+	authFunc := authMiddleware.MiddlewareFunc
 
-func checkJACROrigin(c *gin.Context) bool {
-	origin := c.Request.Header.Get("Origin")
-	parsedOrigin, err := url.Parse(origin)
-	if err != nil {
-		return false
+	v1 := router.Group("/v1")
+	{
+		auth := v1.Group("/auth")
+		auth.POST("/login", authMiddleware.LoginHandler)
+		auth.POST("/refresh", authMiddleware.RefreshHandler)
+
+		motd := v1.Group("/motd")
+		motd.GET("/", motdListEndpoint)
+		motd.PUT("/", authFunc(), motdPutEndpoint)
 	}
 
-	if (parsedOrigin.Host == "just-a-chill-room.net") || (parsedOrigin.Host == "www.just-a-chill-room.net") {
-		c.Header("Access-Control-Allow-Origin", origin)
-		return true
-	}
-	return true
+	http.ListenAndServe(conf.Address, router)
 }
