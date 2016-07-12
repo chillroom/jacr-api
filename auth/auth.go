@@ -26,9 +26,6 @@ type AdminUser struct {
 // Users can get a token by posting a json request to LoginHandler. The token then needs to be passed in
 // the Authentication header. Example: Authorization:Bearer XXX_TOKEN_XXX#!/usr/bin/env
 type GinJWTMiddleware struct {
-	// Realm name to display to the user. Required.
-	Realm string
-
 	// signing algorithm - possible values are HS256, HS384, HS512
 	// Optional, default is HS256.
 	SigningAlgorithm string
@@ -58,10 +55,6 @@ func (mw *GinJWTMiddleware) MiddlewareInit() error {
 
 	if mw.Timeout == 0 {
 		mw.Timeout = time.Hour
-	}
-
-	if mw.Realm == "" {
-		return errors.New("realm is required")
 	}
 
 	if mw.Key == nil {
@@ -233,7 +226,6 @@ func (mw *GinJWTMiddleware) RefreshHandler(c *gin.Context) {
 
 func (mw *GinJWTMiddleware) parseToken(c *gin.Context) (*jwt.Token, error, int) {
 	authHeader := c.Request.Header.Get("Authorization")
-
 	if authHeader == "" {
 		return nil, errors.New("authorization required"), http.StatusForbidden
 	}
@@ -259,12 +251,7 @@ func (mw *GinJWTMiddleware) parseToken(c *gin.Context) (*jwt.Token, error, int) 
 }
 
 func (mw *GinJWTMiddleware) unauthorized(c *gin.Context, code int, message string) {
-
-	if mw.Realm == "" {
-		mw.Realm = "gin jwt"
-	}
-
-	c.Header("WWW-Authenticate", "JWT realm="+mw.Realm)
+	c.Header("WWW-Authenticate", "JWT realm=jacr-api")
 	c.Abort()
 
 	c.JSON(code, gin.H{

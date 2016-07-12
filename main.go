@@ -77,7 +77,6 @@ func loadRoutes() {
 	///////////////
 
 	authMiddleware := &auth.GinJWTMiddleware{
-		Realm:      "jacr-admin",
 		Key:        []byte("secret key"),
 		Timeout:    time.Hour,
 		MaxRefresh: time.Hour * 24,
