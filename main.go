@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/qaisjp/jacr-api/auth"
 	r "gopkg.in/dancannon/gorethink.v2"
 	"net/http"
 	"os"
+	"time"
 )
 
 var conf = struct {
@@ -74,7 +76,14 @@ func loadRoutes() {
 	router.GET("/api/history/:user", historyUserListEndpoint)
 	///////////////
 
-	authMiddleware := getAuthMiddleware()
+	authMiddleware := &auth.GinJWTMiddleware{
+		Realm:      "jacr-admin",
+		Key:        []byte("secret key"),
+		Timeout:    time.Hour,
+		MaxRefresh: time.Hour * 24,
+		Rethink:    rethinkSession,
+	}
+
 	authFunc := authMiddleware.MiddlewareFunc
 
 	v1 := router.Group("/v1")

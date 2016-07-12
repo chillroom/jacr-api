@@ -45,7 +45,7 @@ func motdPutEndpoint(c *gin.Context) {
 		c.JSON(500, gin.H{
 			"status":  500,
 			"code":    "error",
-			"message": "nothing to save",
+			"message": "invalid json. expected array of strings.",
 		})
 		return
 	}
