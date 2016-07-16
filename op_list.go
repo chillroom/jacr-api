@@ -6,46 +6,17 @@ import (
 )
 
 func opListEndpoint(c *gin.Context) {
-	res, err := r.
-		Table("songs").
-		Filter(
-			r.Row.Field("plays").Gt(4),
-		).
-		Avg("plays").
-		Default(100).
-		Ceil().
-		Run(rethinkSession)
-
-	if err != nil {
-		c.JSON(200, gin.H{
-			"status":  500,
-			"code":    "could not calculate the avg number of plays",
-			"message": err.Error(),
-		})
-		return
-	}
-	defer res.Close()
-
-	// returns a number
-	var avg int
-	err = res.One(&avg)
-	if err != nil {
-		c.JSON(200, gin.H{
-			"status":  500,
-			"code":    "could not receive the avg number of plays",
-			"message": err.Error(),
-		})
-		return
-	}
-
-	res, err = r.Table("songs").Filter(
-		r.Row.Field("plays").
-			Gt(8).
-			And(r.Row.Field("lastPlay").Gt(r.Now().Add(-1209600))).
+	res, err := r.Table("songs").Filter(
+		r.Row.Field("recentPlays").
+			Gt(10).
+			And(r.Row.Field("lastPlay").Gt(r.Now().Add(-5260000))).
 			And(r.Row.Field("skipReason").Eq(nil)),
 	).
 		OrderBy(r.Desc("lastPlay")).
-		OrderBy(r.Desc("plays")).
+		OrderBy(r.Desc("recentPlays")).
+		Merge(map[string]interface{}{
+			"plays": r.Row.Field("recentPlays"), // for compatibility with current code
+		}).
 		Run(rethinkSession)
 
 	if err != nil {
