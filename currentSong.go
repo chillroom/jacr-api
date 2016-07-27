@@ -12,7 +12,7 @@ func currentSongEndpoint(c *gin.Context) {
 		Pluck("song", "user", "time").
 		Merge(map[string]interface{}{
 			"dj":   r.Table("users").Get(r.Row.Field("user")).Field("username"),
-			"song": r.Table("songs").Get(r.Row.Field("song")).Field("name"),
+			"song": r.Table("songs").Get(r.Row.Field("song")).Pluck("fkid", "type", "name"),
 		},
 		).
 		Without("user").
