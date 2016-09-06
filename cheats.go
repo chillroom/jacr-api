@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"os/exec"
 )
@@ -15,6 +16,7 @@ func restartCheatEndpoint(c *gin.Context) {
 	out, err := cmd.Output()
 
 	if err != nil {
+		fmt.Println(out)
 		c.String(501, "Failed to restart: "+string(out))
 		return
 	}
