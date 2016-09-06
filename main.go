@@ -76,6 +76,9 @@ func loadRoutes() {
 	router.GET("/api/history/:user", historyUserListEndpoint)
 	///////////////
 
+	// temporary cheats
+	router.POST("/_/restart", restartCheatEndpoint)
+
 	authMiddleware := &auth.GinJWTMiddleware{
 		Key:        []byte("secret key"),
 		Timeout:    time.Hour,
