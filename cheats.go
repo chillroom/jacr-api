@@ -15,7 +15,6 @@ func restartCheatEndpoint(c *gin.Context) {
 	out, err := cmd.Output()
 
 	if err != nil {
-		fmt.Prin
 		c.String(501, "Failed to restart: "+string(out))
 		return
 	}
