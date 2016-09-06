@@ -11,11 +11,12 @@ func restartCheatEndpoint(c *gin.Context) {
 		return
 	}
 
-	cmd := exec.Command("pm2", "restart", "jacr-api")
-	err := cmd.Run()
+	cmd := exec.Command("pm2", "restart", "jacr-bot")
+	out, err := cmd.Output()
 
 	if err != nil {
-		c.String(501, "Failed to restart :(")
+		fmt.Prin
+		c.String(501, "Failed to restart: "+out)
 		return
 	}
 
