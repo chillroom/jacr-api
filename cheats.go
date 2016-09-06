@@ -13,7 +13,7 @@ func restartCheatEndpoint(c *gin.Context) {
 	}
 
 	cmd := exec.Command("pm2", "restart", "jacr-bot")
-	out, err := cmd.Output()
+	out, err := cmd.CombinedOutput()
 
 	if err != nil {
 		fmt.Println(string(out))
