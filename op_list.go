@@ -13,9 +13,9 @@ func opListEndpoint(c *gin.Context) {
 			And(r.Row.Field("skipReason").Eq(nil)),
 	).
 		OrderBy(r.Desc("lastPlay")).
-		OrderBy(r.Desc("recentPlays")).
+		OrderBy(r.Desc("totalPlays")).
 		Merge(map[string]interface{}{
-			"plays": r.Row.Field("recentPlays"), // for compatibility with current code
+			"plays": r.Row.Field("totalPlays"), // for compatibility with current code
 		}).
 		Run(rethinkSession)
 
