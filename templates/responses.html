@@ -13,7 +13,14 @@
 	{{ range $r := . }}
 		<tr>
 			<td><strong>{{ $r.Name }}</strong></td>
-			<td></td>
+			<td>
+				<small>
+				{{ if $r.Aliases }}<strong>aliases:</strong> {{ end }}
+				{{ range $alias := $r.Aliases }}
+					{{$alias}}, 
+				{{ end }}
+				</small>
+			</td>
 		</tr>
 	   
 		{{ range $o := $r.Responses }}

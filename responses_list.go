@@ -7,6 +7,7 @@ import (
 
 type Response struct {
 	Name      string   `gorethink:"name"`
+	Aliases   []string `gorethink:"aliases"`
 	Responses []string `gorethink:"responses"`
 }
 
@@ -15,7 +16,7 @@ func responsesListEndpoint(c *gin.Context) {
 	res, err := r.
 		Table("responses").
 		OrderBy(r.OrderByOpts{Index: r.Asc("name")}).
-		Pluck("name", "responses").
+		Pluck("name", "responses", "aliases").
 		Run(rethinkSession)
 
 	if err != nil {
