@@ -1,14 +1,28 @@
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css" />
+<div class="container">
 <h1>Responses</h1>
 
-<ul>
+<table class="u-full-width">
+	<thead>
+		<tr>
+			<th><strong>Command</strong></th>
+			<th>Response</th>
+		</tr>
+	</thead>
+	<tbody>
 	{{ range $r := . }}
-	   <li>
-	   		<strong>{{ $r.Name }}</strong>
-	   		<ul>
-	   			{{ range $o := $r.Responses }}
-					<li>{{$o}}</li>
-	   			{{ end }}
-			</ul>
-		</li>
+		<tr>
+			<td><strong>{{ $r.Name }}</strong></td>
+			<td></td>
+		</tr>
+	   
+		{{ range $o := $r.Responses }}
+		<tr>
+			<td></td>
+			<td>{{$o}}</td>
+		</tr>
+		{{ end }}
 	{{ end }}
-</ul>
+	</tbody>
+</table>
+</div>
