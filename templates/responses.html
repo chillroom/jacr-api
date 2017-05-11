@@ -1,0 +1,14 @@
+<h1>Responses</h1>
+
+<ul>
+	{{ range $r := . }}
+	   <li>
+	   		<strong>{{ $r.Name }}</strong>
+	   		<ul>
+	   			{{ range $o := $r.Responses }}
+					<li>{{$o}}</li>
+	   			{{ end }}
+			</ul>
+		</li>
+	{{ end }}
+</ul>

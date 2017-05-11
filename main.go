@@ -61,6 +61,8 @@ func main() {
 func loadRoutes() {
 	router := gin.Default()
 
+	loadTemplates(router)
+
 	router.POST("/invite", slackHandler)
 	router.GET("/badge-social.svg", slackImageHandler)
 
@@ -75,6 +77,12 @@ func loadRoutes() {
 	router.GET("/api/history", historyListEndpoint)
 	router.GET("/api/history/:user", historyUserListEndpoint)
 	///////////////
+
+	/////
+	user_face := router.Group("/user")
+	{
+		user_face.GET("/responses", responsesListEndpoint)
+	}
 
 	// temporary cheats
 	router.POST("/_/restart", restartCheatEndpoint)
@@ -100,4 +108,8 @@ func loadRoutes() {
 	}
 
 	http.ListenAndServe(conf.Address, router)
+}
+
+func loadTemplates(g *gin.Engine) {
+	g.LoadHTMLFiles("templates/responses.html")
 }
