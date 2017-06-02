@@ -12,18 +12,16 @@
 	<tbody>
 	{{ range $r := . }}
 		<tr>
-			<td><strong>{{ $r.Name }}</strong></td>
-			<td>
-				<small>
-				{{ if $r.Aliases }}<strong>aliases:</strong> {{ end }}
-				{{ range $alias := $r.Aliases }}
-					{{$alias}}, 
+			<td><small>
+				{{ range $c := $r.Cmds }}
+					{{$c}}, 
 				{{ end }}
 				</small>
 			</td>
+			<td></td>
 		</tr>
 	   
-		{{ range $o := $r.Responses }}
+		{{ range $o := $r.Messages }}
 		<tr>
 			<td></td>
 			<td>{{$o}}</td>

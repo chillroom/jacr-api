@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/qaisjp/jacr-api/auth"
-	r "gopkg.in/dancannon/gorethink.v2"
+	"log"
 	"net/http"
 	"os"
-	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-pg/pg"
 )
 
 var conf = struct {
@@ -18,7 +18,7 @@ var conf = struct {
 	Address string
 }{}
 
-var rethinkSession *r.Session
+var db *pg.DB
 
 func main() {
 	var err error
@@ -26,16 +26,19 @@ func main() {
 	fs := getFlagSet()
 	fs.Parse(os.Args[1:])
 
-	rethinkSession, err = r.Connect(r.ConnectOpts{
-		Address:  fs.Lookup("rethinkdb_address").Value.String(),
-		Database: fs.Lookup("rethinkdb_database").Value.String(),
-		Username: fs.Lookup("rethinkdb_username").Value.String(),
-		Password: fs.Lookup("rethinkdb_password").Value.String(),
+	db = pg.Connect(&pg.Options{
+		Addr:     fs.Lookup("postgres_addr").Value.String(),
+		User:     fs.Lookup("postgres_user").Value.String(),
+		Database: fs.Lookup("postgres_database").Value.String(),
+		Password: fs.Lookup("postgres_password").Value.String(),
 	})
+
+	_, err = db.Exec("SELECT 1")
 	if err != nil {
-		fmt.Println(err.Error())
-		return
+		log.Print("Postgres connection error!\n")
+		panic(err)
 	}
+	log.Print("Connected to PostgreSQL.\n")
 
 	conf.SlackURL = fs.Lookup("slack_url").Value.String()
 	if conf.SlackURL == "" {
@@ -87,24 +90,24 @@ func loadRoutes() {
 	// temporary cheats
 	router.POST("/_/restart", restartCheatEndpoint)
 
-	authMiddleware := &auth.GinJWTMiddleware{
-		Key:        []byte("secret key"),
-		Timeout:    time.Hour,
-		MaxRefresh: time.Hour * 24,
-		Rethink:    rethinkSession,
-	}
+	// authMiddleware := &auth.GinJWTMiddleware{
+	// 	Key:        []byte("secret key"),
+	// 	Timeout:    time.Hour,
+	// 	MaxRefresh: time.Hour * 24,
+	// 	Rethink:    rethinkSession,
+	// }
 
-	authFunc := authMiddleware.MiddlewareFunc
+	// authFunc := authMiddleware.MiddlewareFunc
 
 	v1 := router.Group("/v1")
 	{
-		auth := v1.Group("/auth")
-		auth.POST("/login", authMiddleware.LoginHandler)
-		auth.POST("/refresh", authMiddleware.RefreshHandler)
+		// auth := v1.Group("/auth")
+		// auth.POST("/login", authMiddleware.LoginHandler)
+		// auth.POST("/refresh", authMiddleware.RefreshHandler)
 
 		motd := v1.Group("/motd")
 		motd.GET("/", motdListEndpoint)
-		motd.PUT("/", authFunc(), motdPutEndpoint)
+		// motd.PUT("/", authFunc(), motdPutEndpoint)
 	}
 
 	http.ListenAndServe(conf.Address, router)

@@ -2,27 +2,20 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
-	r "gopkg.in/dancannon/gorethink.v2"
 )
 
 func motdListEndpoint(c *gin.Context) {
-	res, err := r.Table("settings").Get("motd").Pluck("messages").Field("messages").Run(rethinkSession)
-	if err != nil {
-		c.JSON(500, gin.H{
-			"status":  500,
-			"code":    "could not receive MOTD messages",
-			"message": err.Error(),
-		})
-		return
+	var messages []struct {
+		ID      int
+		Message string
+		Title   string
 	}
-	defer res.Close()
+	_, err := db.Query(&messages, `SELECT * FROM notices`)
 
-	var messages []interface{}
-	err = res.All(&messages)
 	if err != nil {
-		c.JSON(500, gin.H{
+		c.JSON(200, gin.H{
 			"status":  500,
-			"code":    "could not receive select MOTD message from response",
+			"code":    "could not get the notices",
 			"message": err.Error(),
 		})
 		return
@@ -35,37 +28,37 @@ func motdListEndpoint(c *gin.Context) {
 	out(200, gin.H{
 		"status":  200,
 		"code":    "success",
-		"message": messages,
+		"message": &messages,
 	})
 }
 
 func motdPutEndpoint(c *gin.Context) {
-	var messages []string
-	if c.BindJSON(&messages) != nil {
-		c.JSON(500, gin.H{
-			"status":  500,
-			"code":    "error",
-			"message": "invalid json. expected array of strings.",
-		})
-		return
-	}
+	// var messages []string
+	// if c.BindJSON(&messages) != nil {
+	// 	c.JSON(500, gin.H{
+	// 		"status":  500,
+	// 		"code":    "error",
+	// 		"message": "invalid json. expected array of strings.",
+	// 	})
+	// 	return
+	// }
 
-	_, err := r.Table("settings").Get("motd").Update(map[string]interface{}{
-		"messages": messages,
-	}).RunWrite(rethinkSession)
+	// _, err := r.Table("settings").Get("motd").Update(map[string]interface{}{
+	// 	"messages": messages,
+	// }).RunWrite(rethinkSession)
 
-	if err != nil {
-		c.JSON(500, gin.H{
-			"status":  500,
-			"code":    "failed to update settings",
-			"message": err.Error(),
-		})
-		return
-	}
+	// if err != nil {
+	// 	c.JSON(500, gin.H{
+	// 		"status":  500,
+	// 		"code":    "failed to update settings",
+	// 		"message": err.Error(),
+	// 	})
+	// 	return
+	// }
 
-	c.JSON(200, gin.H{
-		"status":  200,
-		"code":    "success",
-		"message": "message of the day listing updated",
-	})
+	// c.JSON(200, gin.H{
+	// 	"status":  200,
+	// 	"code":    "success",
+	// 	"message": "message of the day listing updated",
+	// })
 }

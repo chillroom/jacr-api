@@ -7,10 +7,11 @@ import (
 	r "gopkg.in/dancannon/gorethink.v2"
 
 	"errors"
-	"gopkg.in/dgrijalva/jwt-go.v3"
 	"net/http"
 	"strings"
 	"time"
+
+	"gopkg.in/dgrijalva/jwt-go.v3"
 )
 
 type AdminUser struct {

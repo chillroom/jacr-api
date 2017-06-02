@@ -1,23 +1,26 @@
 package main
 
 import (
+	"time"
+
 	"github.com/gin-gonic/gin"
-	r "gopkg.in/dancannon/gorethink.v2"
 )
 
 func currentSongEndpoint(c *gin.Context) {
-	res, err := r.Table("history").
-		OrderBy(r.OrderByOpts{Index: r.Desc("time")}).
-		Limit(1).
-		Pluck("song", "user", "time").
-		Merge(map[string]interface{}{
-			"dj":   r.Table("users").Get(r.Row.Field("user")).Field("username"),
-			"song": r.Table("songs").Get(r.Row.Field("song")).Pluck("fkid", "type", "name"),
-		},
-		).
-		Without("user").
-		Run(rethinkSession)
+	var result struct {
+		Fkid     string
+		Name     string
+		Type     string
+		Time     time.Time
+		Username string
+	}
 
+	_, err := db.QueryOne(&result, `SELECT songs.fkid, songs.name, songs.type, history.time, dubtrack_users.username
+		FROM history, songs, dubtrack_users
+		WHERE
+		(history.song = songs.id) and
+		(history."user" = dubtrack_users.id)
+		ORDER BY history.time DESC LIMIT 1`)
 	if err != nil {
 		c.JSON(200, gin.H{
 			"status":  500,
@@ -26,22 +29,27 @@ func currentSongEndpoint(c *gin.Context) {
 		})
 		return
 	}
-	defer res.Close()
 
-	var messages interface{}
-	err = res.One(&messages)
-	if err != nil {
-		c.JSON(200, gin.H{
-			"status":  500,
-			"code":    "could not receive current song from response",
-			"message": err.Error(),
-		})
-		return
+	var output struct {
+		Song struct {
+			Fkid string `json:"fkid"`
+			Name string `json:"name"`
+			Type string `json:"type"`
+		} `json:"song"`
+
+		DJ   string    `json:"dj"`
+		Time time.Time `json:"time"`
 	}
+
+	output.Song.Fkid = result.Fkid
+	output.Song.Name = result.Name
+	output.Song.Type = result.Type
+	output.DJ = result.Username
+	output.Time = result.Time
 
 	c.JSON(200, gin.H{
 		"status": 200,
 		"code":   "success",
-		"data":   messages,
+		"data":   output,
 	})
 }

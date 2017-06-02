@@ -9,11 +9,11 @@ func getFlagSet() *flag.FlagSet {
 	fs.String("config", "", "path to the config file")
 	// fs.String("log_level", "info", "lowest level of log messages to print")
 
-	// RethinkDB connection
-	fs.String("rethinkdb_address", "localhost:28015", "Address to the RethinkDB server")
-	fs.String("rethinkdb_database", "", "Name of the database to use")
-	fs.String("rethinkdb_username", "", "Username of the database user to use")
-	fs.String("rethinkdb_password", "", "Password of the database user to use")
+	// postgres connection
+	fs.String("postgres_addr", "localhost:5432", "Address to the postgres server")
+	fs.String("postgres_database", "", "Name of the database to use")
+	fs.String("postgres_user", "", "Username of the database user to use")
+	fs.String("postgres_password", "", "Password of the database user to use")
 
 	// Slack
 	fs.String("slack_url", "", "Slack Room URL")

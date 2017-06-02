@@ -1,40 +1,28 @@
 package main
 
 import (
+	"time"
+
 	"github.com/gin-gonic/gin"
-	r "gopkg.in/dancannon/gorethink.v2"
 )
 
+type song struct {
+	ID       int       `json:"id"`
+	Fkid     string    `json:"fkid"`
+	Name     string    `json:"name"`
+	LastPlay time.Time `json:"lastPlay"`
+	Type     string    `json:"type"`
+	Plays    int       `json:"plays"`
+}
+
 func opListEndpoint(c *gin.Context) {
-	res, err := r.Table("songs").Filter(
-		r.Row.Field("recentPlays").
-			Gt(10).
-			And(r.Row.Field("lastPlay").Gt(r.Now().Add(-5260000))).
-			And(r.Row.Field("skipReason").Eq(nil)),
-	).
-		OrderBy(r.Desc("lastPlay")).
-		OrderBy(r.Desc("totalPlays")).
-		Merge(map[string]interface{}{
-			"plays": r.Row.Field("totalPlays"), // for compatibility with current code
-		}).
-		Run(rethinkSession)
+	results := make([]song, 0)
+	_, err := db.Query(&results, `SELECT id, fkid, name, last_play, type, total_plays as plays FROM songs WHERE skip_reason = 'op'`)
 
 	if err != nil {
 		c.JSON(200, gin.H{
 			"status":  500,
-			"code":    "could not calculate OP list",
-			"message": err.Error(),
-		})
-		return
-	}
-	defer res.Close()
-
-	var list []interface{}
-	err = res.All(&list)
-	if err != nil {
-		c.JSON(200, gin.H{
-			"status":  500,
-			"code":    "could not receive OP list from cursor",
+			"code":    "could not get the op list",
 			"message": err.Error(),
 		})
 		return
@@ -43,6 +31,6 @@ func opListEndpoint(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"status": 200,
 		"code":   "success",
-		"data":   list,
+		"data":   results,
 	})
 }

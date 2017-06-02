@@ -2,39 +2,28 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
-	r "gopkg.in/dancannon/gorethink.v2"
 )
 
 type Response struct {
-	Name      string   `gorethink:"name"`
-	Aliases   []string `gorethink:"aliases"`
-	Responses []string `gorethink:"responses"`
+	Cmds     []string `pg:",array"`
+	Messages []string `pg:",array"`
 }
 
 func responsesListEndpoint(c *gin.Context) {
+	list := make([]Response, 0)
 
-	res, err := r.
-		Table("responses").
-		OrderBy(r.OrderByOpts{Index: r.Asc("name")}).
-		Pluck("name", "responses", "aliases").
-		Run(rethinkSession)
+	_, err := db.Query(&list, `
+		SELECT array_agg(cmds.name) as cmds, groups.messages FROM
+			response_commands as cmds,
+			response_groups as groups
+		WHERE
+			cmds.group = groups.id
+		GROUP BY groups.messages`)
 
 	if err != nil {
 		c.JSON(200, gin.H{
 			"status":  500,
-			"code":    "could not query responses",
-			"message": err.Error(),
-		})
-		return
-	}
-	defer res.Close()
-
-	var list []Response
-	err = res.All(&list)
-	if err != nil {
-		c.JSON(200, gin.H{
-			"status":  500,
-			"code":    "could not receive responses from cursor",
+			"code":    "could not get the responses",
 			"message": err.Error(),
 		})
 		return
