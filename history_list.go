@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -76,6 +77,17 @@ func historyListEndpoint(c *gin.Context) {
 }
 
 func historyUserListEndpoint(c *gin.Context) {
+	uid, err := strconv.Atoi(c.Param("user"))
+
+	if (err != nil) || (uid < 1) {
+		c.JSON(200, gin.H{
+			"status":  500,
+			"code":    "provided user is not a valid number",
+			"message": err.Error(),
+		})
+		return
+	}
+
 	var results []struct {
 		Fkid      string    `json:"-"`
 		Name      string    `json:"-"`
@@ -101,7 +113,7 @@ func historyUserListEndpoint(c *gin.Context) {
 		} `json:"user"`
 	}
 
-	_, err := db.Query(&results, `
+	_, err = db.Query(&results, `
 		SELECT
 			songs.fkid, songs.name, songs.type,
 			dubtrack_users.id as user_id, dubtrack_users.username,
@@ -112,7 +124,7 @@ func historyUserListEndpoint(c *gin.Context) {
 		(history."user" = $1) and
 		(dubtrack_users.id = $1)
 		ORDER BY history.time DESC LIMIT 100
-		`, c.Param("user"))
+		`, uid)
 
 	if err != nil {
 		c.JSON(200, gin.H{
