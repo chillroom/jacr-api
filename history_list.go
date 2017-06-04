@@ -121,10 +121,10 @@ func historyUserListEndpoint(c *gin.Context) {
 		FROM history, songs, dubtrack_users
 		WHERE
 		(history.song = songs.id) and
-		(history."user" = $1) and
-		(dubtrack_users.id = $1)
+		(history."user" = ?) and
+		(dubtrack_users.id = ?)
 		ORDER BY history.time DESC LIMIT 100
-		`, uid)
+		`, uid, uid)
 
 	if err != nil {
 		c.JSON(200, gin.H{
