@@ -79,7 +79,7 @@ func historyListEndpoint(c *gin.Context) {
 func historyUserListEndpoint(c *gin.Context) {
 	uid, err := strconv.Atoi(c.Param("user"))
 
-	if (err != nil) || (uid < 1) {
+	if err != nil {
 		c.JSON(200, gin.H{
 			"status":  500,
 			"code":    "provided user is not a valid number",
