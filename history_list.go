@@ -111,9 +111,9 @@ func historyUserListEndpoint(c *gin.Context) {
 			Up   int `json:"up"`
 		} `json:"score"`
 		User struct {
-			ID       int    `json:"id"`
-			Username string `json:"username"`
-		} `json:"user"`
+			ID       int    `json:"id,omitempty"`
+			Username string `json:"username,omitempty"`
+		} `json:"user,omitempty"`
 	}
 
 	_, err = db.Query(&results, `
