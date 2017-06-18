@@ -24,6 +24,7 @@ func historyListEndpoint(c *gin.Context) {
 		ScoreDown int       `json:"-"`
 
 		Song struct {
+			Fkid string `json:"fkid"`
 			Name string `json:"name"`
 		} `json:"song"`
 		Score struct {
@@ -59,6 +60,7 @@ func historyListEndpoint(c *gin.Context) {
 	}
 
 	for i, result := range results {
+		results[i].Song.Fkid = result.Fkid
 		results[i].Song.Name = result.Name
 
 		results[i].Score.Up = result.ScoreUp
@@ -101,6 +103,7 @@ func historyUserListEndpoint(c *gin.Context) {
 
 		Song struct {
 			Name string `json:"name"`
+			Fkid string `json:"fkid"`
 		} `json:"song"`
 		Score struct {
 			Down int `json:"down"`
@@ -136,6 +139,7 @@ func historyUserListEndpoint(c *gin.Context) {
 	}
 
 	for i, result := range results {
+		results[i].Song.Fkid = result.Fkid
 		results[i].Song.Name = result.Name
 
 		results[i].Score.Up = result.ScoreUp
