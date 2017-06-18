@@ -146,8 +146,10 @@ func historyUserListEndpoint(c *gin.Context) {
 		results[i].Score.Grab = result.ScoreGrab
 		results[i].Score.Down = result.ScoreDown
 
-		results[i].User.ID = result.UserID
-		results[i].User.Username = result.Username
+		if i == 0 {
+			results[i].User.ID = result.UserID
+			results[i].User.Username = result.Username
+		}
 	}
 
 	c.JSON(200, gin.H{
