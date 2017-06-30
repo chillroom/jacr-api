@@ -22,4 +22,4 @@ restore_checkpoint::
 	pg_restore -U postgres -d jacr_dev $$(find dev_backup | grep \.dump | sort | tail -n 1)
 
 migrate::
-	cd database/migrations; goose postgres "user=postgres dbname=jacr_dev sslmode=disable" up
+	goose --dir=./database/migrations postgres "user=postgres dbname=jacr_dev sslmode=disable" up
