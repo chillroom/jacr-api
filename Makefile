@@ -20,3 +20,6 @@ restore_checkpoint::
 	dropdb -U postgres jacr_dev
 	createdb -U postgres jacr_dev
 	pg_restore -U postgres -d jacr_dev $$(find dev_backup | grep \.dump | sort | tail -n 1)
+
+migrate::
+	cd database/migrations; goose postgres "user=postgres dbname=jacr_dev sslmode=disable" up
