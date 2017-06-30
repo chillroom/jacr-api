@@ -1,4 +1,4 @@
-package main
+package old
 
 import (
 	"github.com/gin-gonic/gin"
@@ -10,7 +10,7 @@ type Response struct {
 	Messages []string `pg:",array"`
 }
 
-func responsesListEndpoint(c *gin.Context) {
+func ResponsesListEndpoint(c *gin.Context) {
 	list := make([]Response, 0)
 
 	db := c.Keys["db"].(*pg.DB)

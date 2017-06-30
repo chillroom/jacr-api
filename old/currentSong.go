@@ -1,4 +1,4 @@
-package main
+package old
 
 import (
 	"time"
@@ -7,7 +7,7 @@ import (
 	"github.com/go-pg/pg"
 )
 
-func currentSongEndpoint(c *gin.Context) {
+func CurrentSongEndpoint(c *gin.Context) {
 	var result struct {
 		Fkid     string
 		Name     string

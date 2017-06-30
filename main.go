@@ -7,12 +7,14 @@ import (
 	"os"
 	"time"
 
-	"golang.org/x/crypto/bcrypt"
+	"github.com/pkg/errors"
+	"github.com/qaisjp/jacr-api/jwt"
+	"github.com/qaisjp/jacr-api/old"
+	"github.com/qaisjp/jacr-api/structs"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-pg/pg"
-	"github.com/pkg/errors"
-	"github.com/qaisjp/jacr-api/jwt"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var conf = struct {
@@ -71,27 +73,27 @@ func main() {
 	loadRoutes(db)
 }
 
-func old(router *gin.Engine) {
+func oldRoutes(router *gin.Engine) {
 	/////////LEGACY
 	motd_legacy := router.Group("/motd")
 	{
-		motd_legacy.GET("/list", motdListEndpoint)
+		motd_legacy.GET("/list", old.MotdListEndpoint)
 	}
 
-	router.GET("/api/current-song", currentSongEndpoint)
-	router.GET("/api/op", opListEndpoint)
-	router.GET("/api/history", historyListEndpoint)
-	router.GET("/api/history/:user", historyUserListEndpoint)
+	router.GET("/api/current-song", old.CurrentSongEndpoint)
+	router.GET("/api/op", old.OpListEndpoint)
+	router.GET("/api/history", old.HistoryListEndpoint)
+	router.GET("/api/history/:user", old.HistoryUserListEndpoint)
 	///////////////
 
 	/////
 	user_face := router.Group("/user")
 	{
-		user_face.GET("/responses", responsesListEndpoint)
+		user_face.GET("/responses", old.ResponsesListEndpoint)
 	}
 
 	// temporary cheats
-	router.POST("/_/restart", restartCheatEndpoint)
+	router.POST("/_/restart", old.RestartCheatEndpoint)
 }
 
 func getJWTMiddleware(db *pg.DB) *jwt.GinJWTMiddleware {
@@ -101,7 +103,7 @@ func getJWTMiddleware(db *pg.DB) *jwt.GinJWTMiddleware {
 		Timeout:    time.Hour * 24,
 		MaxRefresh: time.Hour * 24,
 		Authenticator: func(username string, password string, c *gin.Context) (userID int, success bool) {
-			var u User
+			var u structs.User
 			_, err := db.QueryOne(&u, "SELECT id, password FROM users WHERE username = ?", username)
 			if err != nil {
 				if pg.ErrNoRows == err {
@@ -173,7 +175,7 @@ func loadRoutes(db *pg.DB) {
 	router.POST("/invite", slackHandler)
 	router.GET("/badge-social.svg", slackImageHandler)
 
-	old(router)
+	oldRoutes(router)
 
 	authMiddleware := getJWTMiddleware(db)
 
@@ -190,7 +192,7 @@ func loadRoutes(db *pg.DB) {
 	{
 		notices := root.Group("/notices")
 		{
-			notices.GET("/", motdListEndpoint)
+			notices.GET("/", old.MotdListEndpoint)
 		}
 	}
 

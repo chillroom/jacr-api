@@ -3,6 +3,8 @@ package main
 import (
 	"net/http"
 
+	"github.com/qaisjp/jacr-api/structs"
+
 	"github.com/asaskevich/govalidator"
 	"github.com/gin-gonic/gin"
 	"github.com/go-pg/pg"
@@ -10,22 +12,12 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type User struct {
-	ID int
-
-	Username string `valid:"stringlength(1|255),required"`
-	Password string `valid:"stringlength(5|100),required"`
-	Email    string `valid:"email,stringlength(1|254),required"`
-	Slug     string `valid:"stringlength(1|255),required"`
-	Level    int
-}
-
 func registerEndpoint(c *gin.Context) {
 	username := c.PostForm("username")
 	password := c.PostForm("password")
 	email := c.PostForm("email")
 
-	u := &User{
+	u := &structs.User{
 		Username: username,
 		Password: password,
 		Email:    email,

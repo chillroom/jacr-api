@@ -1,4 +1,4 @@
-package main
+package old
 
 import (
 	"strconv"
@@ -10,7 +10,7 @@ import (
 
 var stmt *pg.Stmt
 
-func historyListEndpoint(c *gin.Context) {
+func HistoryListEndpoint(c *gin.Context) {
 
 	var results []struct {
 		Fkid      string    `json:"-"`
@@ -79,7 +79,7 @@ func historyListEndpoint(c *gin.Context) {
 	})
 }
 
-func historyUserListEndpoint(c *gin.Context) {
+func HistoryUserListEndpoint(c *gin.Context) {
 	uid, err := strconv.Atoi(c.Param("user"))
 
 	if err != nil {

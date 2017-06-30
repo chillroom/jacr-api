@@ -1,13 +1,14 @@
-package main
+package old
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"os"
 	"os/exec"
+
+	"github.com/gin-gonic/gin"
 )
 
-func restartCheatEndpoint(c *gin.Context) {
+func RestartCheatEndpoint(c *gin.Context) {
 	if c.PostForm("codeword") != "341771337" {
 		c.Redirect(302, "/")
 		return

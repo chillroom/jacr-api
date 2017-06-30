@@ -1,4 +1,4 @@
-package main
+package old
 
 import (
 	"time"
@@ -16,7 +16,7 @@ type song struct {
 	Plays    int       `json:"plays"`
 }
 
-func opListEndpoint(c *gin.Context) {
+func OpListEndpoint(c *gin.Context) {
 	results := make([]song, 0)
 	db := c.Keys["db"].(*pg.DB)
 	_, err := db.Query(&results, `SELECT id, fkid, name, last_play, type, total_plays as plays FROM songs WHERE skip_reason = 'op'`)
