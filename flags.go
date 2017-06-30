@@ -7,6 +7,7 @@ func getFlagSet() *flag.FlagSet {
 
 	// Basic options
 	fs.String("config", "", "path to the config file")
+	fs.String("jwt_secret", "", "JWT Secret")
 	// fs.String("log_level", "info", "lowest level of log messages to print")
 
 	// postgres connection
