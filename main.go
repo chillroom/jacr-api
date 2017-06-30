@@ -61,14 +61,7 @@ func main() {
 	loadRoutes()
 }
 
-func loadRoutes() {
-	router := gin.Default()
-
-	loadTemplates(router)
-
-	router.POST("/invite", slackHandler)
-	router.GET("/badge-social.svg", slackImageHandler)
-
+func old(router *gin.Engine) {
 	/////////LEGACY
 	motd_legacy := router.Group("/motd")
 	{
@@ -89,25 +82,22 @@ func loadRoutes() {
 
 	// temporary cheats
 	router.POST("/_/restart", restartCheatEndpoint)
+}
 
-	// authMiddleware := &auth.GinJWTMiddleware{
-	// 	Key:        []byte("secret key"),
-	// 	Timeout:    time.Hour,
-	// 	MaxRefresh: time.Hour * 24,
-	// 	Rethink:    rethinkSession,
-	// }
+func loadRoutes() {
+	router := gin.Default()
 
-	// authFunc := authMiddleware.MiddlewareFunc
+	loadTemplates(router)
 
-	v1 := router.Group("/v1")
+	router.POST("/invite", slackHandler)
+	router.GET("/badge-social.svg", slackImageHandler)
+
+	old(router)
+
+	v2 := router.Group("/v2")
 	{
-		// auth := v1.Group("/auth")
-		// auth.POST("/login", authMiddleware.LoginHandler)
-		// auth.POST("/refresh", authMiddleware.RefreshHandler)
-
 		motd := v1.Group("/motd")
 		motd.GET("/", motdListEndpoint)
-		// motd.PUT("/", authFunc(), motdPutEndpoint)
 	}
 
 	http.ListenAndServe(conf.Address, router)
