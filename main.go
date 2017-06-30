@@ -24,8 +24,6 @@ var conf = struct {
 	Address   string
 }{}
 
-var db *pg.DB
-
 func main() {
 	var err error
 
@@ -56,7 +54,7 @@ func main() {
 		return
 	}
 
-	db = pg.Connect(&pg.Options{
+	db := pg.Connect(&pg.Options{
 		Addr:     fs.Lookup("postgres_addr").Value.String(),
 		User:     fs.Lookup("postgres_user").Value.String(),
 		Database: fs.Lookup("postgres_database").Value.String(),
@@ -70,7 +68,7 @@ func main() {
 	}
 	log.Print("Connected to PostgreSQL.\n")
 
-	loadRoutes()
+	loadRoutes(db)
 }
 
 func old(router *gin.Engine) {
@@ -96,7 +94,7 @@ func old(router *gin.Engine) {
 	router.POST("/_/restart", restartCheatEndpoint)
 }
 
-func getJWTMiddleware() *jwt.GinJWTMiddleware {
+func getJWTMiddleware(db *pg.DB) *jwt.GinJWTMiddleware {
 	return &jwt.GinJWTMiddleware{
 		Realm:      "jacr-api",
 		Key:        []byte(conf.JWTSecret),
@@ -159,8 +157,16 @@ func getJWTMiddleware() *jwt.GinJWTMiddleware {
 	}
 }
 
-func loadRoutes() {
+func getDatabaseMiddleware(db *pg.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Set("db", db)
+		c.Next()
+	}
+}
+
+func loadRoutes(db *pg.DB) {
 	router := gin.Default()
+	router.Use(getDatabaseMiddleware(db))
 
 	loadTemplates(router)
 
@@ -169,7 +175,7 @@ func loadRoutes() {
 
 	old(router)
 
-	authMiddleware := getJWTMiddleware()
+	authMiddleware := getJWTMiddleware(db)
 
 	v2 := router.Group("/v2")
 

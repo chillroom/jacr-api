@@ -5,6 +5,7 @@ import (
 
 	"github.com/asaskevich/govalidator"
 	"github.com/gin-gonic/gin"
+	"github.com/go-pg/pg"
 	"github.com/gosimple/slug"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -41,6 +42,7 @@ func registerEndpoint(c *gin.Context) {
 	}
 
 	count := 0
+	db := c.Keys["db"].(*pg.DB)
 	_, err = db.Query(&count, "SELECT COUNT(id) from users WHERE (username = ?) or (slug = ?) or (email = ?)", u.Username, u.Slug, u.Email)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

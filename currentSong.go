@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-pg/pg"
 )
 
 func currentSongEndpoint(c *gin.Context) {
@@ -14,6 +15,8 @@ func currentSongEndpoint(c *gin.Context) {
 		Time     time.Time
 		Username string
 	}
+
+	db := c.Keys["db"].(*pg.DB)
 
 	_, err := db.QueryOne(&result, `SELECT songs.fkid, songs.name, songs.type, history.time, dubtrack_users.username
 		FROM history, songs, dubtrack_users

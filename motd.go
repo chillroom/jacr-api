@@ -2,9 +2,12 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/go-pg/pg"
 )
 
 func motdListEndpoint(c *gin.Context) {
+	db := c.Keys["db"].(*pg.DB)
+
 	var messages []struct {
 		ID      int
 		Message string

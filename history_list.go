@@ -38,6 +38,7 @@ func historyListEndpoint(c *gin.Context) {
 		} `json:"user"`
 	}
 
+	db := c.Keys["db"].(*pg.DB)
 	_, err := db.Query(&results, `
 		SELECT
 			songs.fkid, songs.name, songs.type,
@@ -116,6 +117,7 @@ func historyUserListEndpoint(c *gin.Context) {
 		} `json:"user,omitempty"`
 	}
 
+	db := c.Keys["db"].(*pg.DB)
 	_, err = db.Query(&results, `
 		SELECT
 			songs.fkid, songs.name, songs.type,
