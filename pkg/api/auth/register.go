@@ -1,9 +1,9 @@
-package main
+package auth
 
 import (
 	"net/http"
 
-	"github.com/qaisjp/jacr-api/structs"
+	"github.com/qaisjp/jacr-api/pkg/models"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/gin-gonic/gin"
@@ -12,12 +12,12 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func registerEndpoint(c *gin.Context) {
+func Register(c *gin.Context) {
 	username := c.PostForm("username")
 	password := c.PostForm("password")
 	email := c.PostForm("email")
 
-	u := &structs.User{
+	u := &models.User{
 		Username: username,
 		Password: password,
 		Email:    email,

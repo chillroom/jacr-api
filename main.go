@@ -10,7 +10,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/qaisjp/jacr-api/jwt"
 	"github.com/qaisjp/jacr-api/old"
-	"github.com/qaisjp/jacr-api/structs"
+	"github.com/qaisjp/jacr-api/pkg/api/auth"
+	"github.com/qaisjp/jacr-api/pkg/models"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-pg/pg"
@@ -103,7 +104,7 @@ func getJWTMiddleware(db *pg.DB) *jwt.GinJWTMiddleware {
 		Timeout:    time.Hour * 24,
 		MaxRefresh: time.Hour * 24,
 		Authenticator: func(username string, password string, c *gin.Context) (userID int, success bool) {
-			var u structs.User
+			var u models.User
 			_, err := db.QueryOne(&u, "SELECT id, password FROM users WHERE username = ?", username)
 			if err != nil {
 				if pg.ErrNoRows == err {
@@ -181,16 +182,16 @@ func loadRoutes(db *pg.DB) {
 
 	v2 := router.Group("/v2")
 
-	auth := v2.Group("/auth")
+	authGroup := v2.Group("/auth")
 	{
-		auth.POST("/login", authMiddleware.LoginHandler)
-		auth.POST("/register", registerEndpoint)
+		authGroup.POST("/login", authMiddleware.LoginHandler)
+		authGroup.POST("/register", auth.Register)
 	}
 
-	root := v2.Group("/")
-	root.Use(authMiddleware.MiddlewareFunc())
+	rootGroup := v2.Group("/")
+	rootGroup.Use(authMiddleware.MiddlewareFunc())
 	{
-		notices := root.Group("/notices")
+		notices := rootGroup.Group("/notices")
 		{
 			notices.GET("/", old.MotdListEndpoint)
 		}
