@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/qaisjp/jacr-api/jwt"
-	"github.com/qaisjp/jacr-api/old"
 	"github.com/qaisjp/jacr-api/pkg/api/auth"
+	"github.com/qaisjp/jacr-api/pkg/api/jwt"
+	"github.com/qaisjp/jacr-api/pkg/api/old"
 	"github.com/qaisjp/jacr-api/pkg/models"
 
 	"github.com/gin-gonic/gin"
