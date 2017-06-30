@@ -7,15 +7,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/qaisjp/jacr-api/pkg/api/auth"
 	"github.com/qaisjp/jacr-api/pkg/api/jwt"
 	"github.com/qaisjp/jacr-api/pkg/api/old"
-	"github.com/qaisjp/jacr-api/pkg/models"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-pg/pg"
-	"golang.org/x/crypto/bcrypt"
 )
 
 var conf = struct {
@@ -103,57 +100,10 @@ func getJWTMiddleware(db *pg.DB) *jwt.GinJWTMiddleware {
 		Key:        []byte(conf.JWTSecret),
 		Timeout:    time.Hour * 24,
 		MaxRefresh: time.Hour * 24,
-		Authenticator: func(username string, password string, c *gin.Context) (userID int, success bool) {
-			var u models.User
-			_, err := db.QueryOne(&u, "SELECT id, password FROM users WHERE username = ?", username)
-			if err != nil {
-				if pg.ErrNoRows == err {
-					return
-				}
 
-				c.JSON(500, gin.H{
-					"status":  "error",
-					"data":    nil,
-					"message": errors.Wrapf(err, "authentication query failed").Error(),
-				})
-
-				return
-			}
-
-			err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
-			if (err != nil) && (err != bcrypt.ErrMismatchedHashAndPassword) {
-				c.JSON(500, gin.H{
-					"status":  "error",
-					"data":    nil,
-					"message": errors.Wrapf(err, "could not compare hash and password").Error(),
-				})
-
-				return
-			}
-
-			fmt.Println(err)
-
-			return u.ID, err != bcrypt.ErrMismatchedHashAndPassword
-		},
-
-		Authorizator: func(userId int, c *gin.Context) bool {
-			if userId == 5 {
-				return true
-			}
-
-			return false
-		},
-
-		Unauthorized: func(c *gin.Context, code int, message string) {
-			if c.Writer.Written() {
-				return
-			}
-
-			c.JSON(code, gin.H{
-				"status":  "error",
-				"message": message,
-			})
-		},
+		Authenticator: auth.Authenticate,
+		Authorizator:  auth.Authorize,
+		Unauthorized:  auth.Unauthorized,
 
 		// TimeFunc provides the current time. You can override it to use another time value. This is useful for testing or if your server uses a different time zone than your tokens.
 		TimeFunc: time.Now,
@@ -165,6 +115,10 @@ func getDatabaseMiddleware(db *pg.DB) gin.HandlerFunc {
 		c.Set("db", db)
 		c.Next()
 	}
+}
+
+func loadTemplates(g *gin.Engine) {
+	g.LoadHTMLFiles("templates/responses.html")
 }
 
 func loadRoutes(db *pg.DB) {
@@ -198,8 +152,4 @@ func loadRoutes(db *pg.DB) {
 	}
 
 	http.ListenAndServe(conf.Address, router)
-}
-
-func loadTemplates(g *gin.Engine) {
-	g.LoadHTMLFiles("templates/responses.html")
 }
