@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/qaisjp/jacr-api/pkg/api"
-	"github.com/qaisjp/jacr-api/pkg/api/old"
 	"github.com/qaisjp/jacr-api/pkg/config"
 
 	"github.com/gin-gonic/gin"
@@ -73,29 +72,6 @@ func main() {
 	loadRoutes(db, conf)
 }
 
-func oldRoutes(router *gin.Engine) {
-	/////////LEGACY
-	legacy := router.Group("/motd")
-	{
-		legacy.GET("/list", old.MotdListEndpoint)
-	}
-
-	router.GET("/api/current-song", old.CurrentSongEndpoint)
-	router.GET("/api/op", old.OpListEndpoint)
-	router.GET("/api/history", old.HistoryListEndpoint)
-	router.GET("/api/history/:user", old.HistoryUserListEndpoint)
-	///////////////
-
-	/////
-	user := router.Group("/user")
-	{
-		user.GET("/responses", old.ResponsesListEndpoint)
-	}
-
-	// temporary cheats
-	router.POST("/_/restart", old.RestartCheatEndpoint)
-}
-
 func loadTemplates(g *gin.Engine) {
 	g.LoadHTMLFiles("templates/responses.html")
 }
@@ -103,15 +79,9 @@ func loadTemplates(g *gin.Engine) {
 func loadRoutes(db *pg.DB, conf *config.Config) {
 	router := gin.Default()
 
-	// just for the old routes
-	router.Use(func(c *gin.Context) {
-		c.Set("db", db)
-		c.Next()
-	})
-
 	loadTemplates(router)
 
-	oldRoutes(router)
+	// just for the old routes
 
 	logger := log.StandardLogger()
 	logger.Level = log.DebugLevel
