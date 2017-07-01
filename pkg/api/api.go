@@ -54,7 +54,7 @@ func NewAPI(
 
 	slack := slack.Impl{API: a}
 	router.POST("/invite", slack.SlackHandler)
-	router.GET("/badge-social.svg", slack.SlackImageHandler)
+	router.GET("/badge-social.svg", slack.CheckOrigin, slack.SlackImageHandler)
 
 	notices := notices.Impl{API: a}
 	router.GET("/v2/notices/", notices.List)

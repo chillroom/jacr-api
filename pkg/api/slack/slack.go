@@ -2,11 +2,13 @@ package slack
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
 )
 
 var generalSlackResponses = map[string]string{
@@ -15,25 +17,31 @@ var generalSlackResponses = map[string]string{
 	"invalid_email":   "Invalid email address entered",
 }
 
-func (i *Impl) CheckJACROrigin(c *gin.Context) bool {
+func (i *Impl) CheckOrigin(c *gin.Context) {
 	origin := c.Request.Header.Get("Origin")
 	parsedOrigin, err := url.Parse(origin)
 	if err != nil {
-		return false
-	}
-
-	if (parsedOrigin.Host == "just-a-chill-room.net") || (parsedOrigin.Host == "www.just-a-chill-room.net") {
-		c.Header("Access-Control-Allow-Origin", origin)
-		return true
-	}
-	return true
-}
-
-func (i *Impl) SlackHandler(c *gin.Context) {
-	if !i.CheckJACROrigin(c) {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": errors.Wrapf(err, "failed to verify origin %q", origin),
+		})
 		return
 	}
 
+	if (parsedOrigin.Host == "") || (parsedOrigin.Host == "just-a-chill-room.net") || (parsedOrigin.Host == "www.just-a-chill-room.net") {
+		c.Header("Access-Control-Allow-Origin", origin)
+		c.Next()
+		return
+	}
+
+	c.Abort()
+	c.JSON(http.StatusInternalServerError, gin.H{
+		"status":  "error",
+		"message": fmt.Sprintf("Invalid origin %q", parsedOrigin.Host),
+	})
+}
+
+func (i *Impl) SlackHandler(c *gin.Context) {
 	email, _ := c.GetPostForm("email")
 
 	// No email? Tell them that.
@@ -103,10 +111,6 @@ func (i *Impl) SlackHandler(c *gin.Context) {
 }
 
 func (i *Impl) SlackImageHandler(c *gin.Context) {
-	if !i.CheckJACROrigin(c) {
-		return
-	}
-
 	v := url.Values{}
 	v.Set("token", i.Config.SlackToken)
 	v.Set("presence", "1")
