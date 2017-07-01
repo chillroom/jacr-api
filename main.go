@@ -9,7 +9,6 @@ import (
 	"github.com/qaisjp/jacr-api/pkg/api"
 	"github.com/qaisjp/jacr-api/pkg/config"
 
-	"github.com/gin-gonic/gin"
 	"github.com/go-pg/pg"
 	log "github.com/sirupsen/logrus"
 )
@@ -55,10 +54,11 @@ func main() {
 
 	_, err = db.Exec("SELECT 1")
 	if err != nil {
-		log.Print("Postgres connection error!\n")
-		panic(err)
+		log.Fatal("Postgres connection error!")
+		return
 	}
-	log.Print("Connected to PostgreSQL.\n")
+
+	log.Infoln("Connected to PostgreSQL.")
 
 	db.OnQueryProcessed(func(event *pg.QueryProcessedEvent) {
 		query, err := event.FormattedQuery()
@@ -72,27 +72,17 @@ func main() {
 	loadRoutes(db, conf)
 }
 
-func loadTemplates(g *gin.Engine) {
-	g.LoadHTMLFiles("templates/responses.html")
-}
-
 func loadRoutes(db *pg.DB, conf *config.Config) {
-	router := gin.Default()
-
-	loadTemplates(router)
-
-	// just for the old routes
+	defer db.Close()
 
 	logger := log.StandardLogger()
 	logger.Level = log.DebugLevel
 
-	api.NewAPI(
+	api := api.NewAPI(
 		logger,
 		db,
-		router,
 		conf,
 	)
 
-	http.ListenAndServe(conf.Address, router)
-	db.Close()
+	http.ListenAndServe(conf.Address, api.Gin)
 }

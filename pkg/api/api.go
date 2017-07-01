@@ -21,9 +21,10 @@ import (
 func NewAPI(
 	log *logrus.Logger,
 	db *pg.DB,
-	router *gin.Engine,
 	conf *config.Config,
 ) *base.API {
+
+	router := gin.Default()
 
 	a := &base.API{
 		Log:    log,
@@ -65,6 +66,7 @@ func NewAPI(
 	router.GET("/v2/responses/", responses.List)
 
 	{
+		router.LoadHTMLFiles("templates/responses.html")
 		router.Use(func(c *gin.Context) {
 			c.Set("db", db)
 			c.Next()
