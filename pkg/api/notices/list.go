@@ -4,16 +4,15 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-pg/pg"
 	"github.com/pkg/errors"
 	"github.com/qaisjp/jacr-api/pkg/models"
 )
 
-func List(c *gin.Context) {
-	db := c.Keys["db"].(*pg.DB)
+// List allows you to list all the notices in the system
+func (i *Impl) List(c *gin.Context) {
 
 	var notices []models.Notice
-	_, err := db.Query(&notices, `SELECT * FROM notices`)
+	_, err := i.DB.Query(&notices, `SELECT * FROM notices`)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

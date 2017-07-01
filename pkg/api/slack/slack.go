@@ -1,11 +1,12 @@
-package main
+package slack
 
 import (
 	"encoding/json"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"net/url"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
 var generalSlackResponses = map[string]string{
@@ -14,7 +15,7 @@ var generalSlackResponses = map[string]string{
 	"invalid_email":   "Invalid email address entered",
 }
 
-func checkJACROrigin(c *gin.Context) bool {
+func (i *Impl) CheckJACROrigin(c *gin.Context) bool {
 	origin := c.Request.Header.Get("Origin")
 	parsedOrigin, err := url.Parse(origin)
 	if err != nil {
@@ -28,8 +29,8 @@ func checkJACROrigin(c *gin.Context) bool {
 	return true
 }
 
-func slackHandler(c *gin.Context) {
-	if !checkJACROrigin(c) {
+func (i *Impl) SlackHandler(c *gin.Context) {
+	if !i.CheckJACROrigin(c) {
 		return
 	}
 
@@ -47,10 +48,10 @@ func slackHandler(c *gin.Context) {
 
 	v := url.Values{}
 	v.Set("email", email)
-	v.Set("token", conf.SlackToken)
+	v.Set("token", i.Config.SlackToken)
 	v.Set("set_active", "true")
 	v.Set("_attempts", "1")
-	resp, err := http.PostForm("https://"+conf.SlackURL+"/api/users.admin.invite", v)
+	resp, err := http.PostForm("https://"+i.Config.SlackURL+"/api/users.admin.invite", v)
 
 	if err != nil {
 		c.JSON(200, gin.H{
@@ -101,15 +102,15 @@ func slackHandler(c *gin.Context) {
 	})
 }
 
-func slackImageHandler(c *gin.Context) {
-	if !checkJACROrigin(c) {
+func (i *Impl) SlackImageHandler(c *gin.Context) {
+	if !i.CheckJACROrigin(c) {
 		return
 	}
 
 	v := url.Values{}
-	v.Set("token", conf.SlackToken)
+	v.Set("token", i.Config.SlackToken)
 	v.Set("presence", "1")
-	resp, err := http.PostForm("https://"+conf.SlackURL+"/api/users.list", v)
+	resp, err := http.PostForm("https://"+i.Config.SlackURL+"/api/users.list", v)
 
 	if err != nil {
 		c.JSON(200, gin.H{

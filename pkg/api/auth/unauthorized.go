@@ -2,7 +2,7 @@ package auth
 
 import "github.com/gin-gonic/gin"
 
-func Unauthorized(c *gin.Context, code int, message string) {
+func (i *Impl) Unauthorized(c *gin.Context, code int, message string) {
 	if c.Writer.Written() {
 		return
 	}

@@ -4,16 +4,14 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-pg/pg"
 	"github.com/pkg/errors"
 	"github.com/qaisjp/jacr-api/pkg/models"
 )
 
-func List(c *gin.Context) {
+func (i *Impl) List(c *gin.Context) {
 	list := []models.Response{}
 
-	db := c.Keys["db"].(*pg.DB)
-	_, err := db.Query(
+	_, err := i.DB.Query(
 		&list,
 		`SELECT array_agg(cmds.name) as cmds, groups.messages FROM
 			response_commands as cmds,

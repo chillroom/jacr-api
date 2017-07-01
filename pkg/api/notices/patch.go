@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-pg/pg"
 	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
 	"github.com/qaisjp/jacr-api/pkg/models"
@@ -22,8 +21,8 @@ type NoticePatch struct {
 	Value json.RawMessage
 }
 
-func Patch(c *gin.Context) {
-	db := c.Keys["db"].(*pg.DB)
+// Patch allows you to add, remove, or replace notices
+func (i *Impl) Patch(c *gin.Context) {
 
 	patches := []NoticePatch{}
 	c.BindJSON(&patches)
@@ -82,7 +81,7 @@ func Patch(c *gin.Context) {
 	}
 
 	query := "DELETE FROM notices WHERE false " + strings.Repeat(" or (title = ?)", len(removedNotices))
-	_, err := db.Exec(query, removedNoticesInterface...)
+	_, err := i.DB.Exec(query, removedNoticesInterface...)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",

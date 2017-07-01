@@ -10,11 +10,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func Authenticate(username string, password string, c *gin.Context) (userID int, success bool) {
+func (i *Impl) Authenticate(username string, password string, c *gin.Context) (userID int, success bool) {
 	var u models.User
 
-	db := c.Keys["db"].(*pg.DB)
-	_, err := db.QueryOne(&u, "SELECT id, password FROM users WHERE username = ?", username)
+	_, err := i.DB.QueryOne(&u, "SELECT id, password FROM users WHERE username = ?", username)
 	if err != nil {
 		if pg.ErrNoRows == err {
 			return

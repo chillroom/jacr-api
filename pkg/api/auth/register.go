@@ -7,12 +7,11 @@ import (
 
 	"github.com/asaskevich/govalidator"
 	"github.com/gin-gonic/gin"
-	"github.com/go-pg/pg"
 	"github.com/gosimple/slug"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func Register(c *gin.Context) {
+func (i *Impl) Register(c *gin.Context) {
 	username := c.PostForm("username")
 	password := c.PostForm("password")
 	email := c.PostForm("email")
@@ -34,8 +33,8 @@ func Register(c *gin.Context) {
 	}
 
 	count := 0
-	db := c.Keys["db"].(*pg.DB)
-	_, err = db.Query(&count, "SELECT COUNT(id) from users WHERE (username = ?) or (slug = ?) or (email = ?)", u.Username, u.Slug, u.Email)
+
+	_, err = i.DB.Query(&count, "SELECT COUNT(id) from users WHERE (username = ?) or (slug = ?) or (email = ?)", u.Username, u.Slug, u.Email)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",
@@ -64,7 +63,7 @@ func Register(c *gin.Context) {
 
 	u.Password = string(hashedPassword)
 
-	err = db.Insert(u)
+	err = i.DB.Insert(u)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",

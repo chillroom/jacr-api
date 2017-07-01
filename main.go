@@ -6,31 +6,22 @@ import (
 	"os"
 	"time"
 
-	"github.com/qaisjp/jacr-api/pkg/api/auth"
-	"github.com/qaisjp/jacr-api/pkg/api/jwt"
-	"github.com/qaisjp/jacr-api/pkg/api/notices"
+	"github.com/qaisjp/jacr-api/pkg/api"
 	"github.com/qaisjp/jacr-api/pkg/api/old"
-	"github.com/qaisjp/jacr-api/pkg/api/responses"
+	"github.com/qaisjp/jacr-api/pkg/config"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-pg/pg"
 	log "github.com/sirupsen/logrus"
 )
 
-var conf = struct {
-	SlackURL      string
-	SlackToken    string
-	SlackChannels string
-
-	JWTSecret string
-	Address   string
-}{}
-
 func main() {
 	var err error
 
 	fs := getFlagSet()
 	fs.Parse(os.Args[1:])
+
+	conf := &config.Config{}
 
 	conf.SlackURL = fs.Lookup("slack_url").Value.String()
 	if conf.SlackURL == "" {
@@ -63,9 +54,6 @@ func main() {
 		Password: fs.Lookup("postgres_password").Value.String(),
 	})
 
-	// logger := log.StandardLogger()
-	// logger.Level = log.DebugLevel
-
 	_, err = db.Exec("SELECT 1")
 	if err != nil {
 		log.Print("Postgres connection error!\n")
@@ -82,7 +70,7 @@ func main() {
 		log.Printf("%s %s", time.Since(event.StartTime), query)
 	})
 
-	loadRoutes(db)
+	loadRoutes(db, conf)
 }
 
 func oldRoutes(router *gin.Engine) {
@@ -108,68 +96,32 @@ func oldRoutes(router *gin.Engine) {
 	router.POST("/_/restart", old.RestartCheatEndpoint)
 }
 
-func getJWTMiddleware(db *pg.DB) *jwt.GinJWTMiddleware {
-	return &jwt.GinJWTMiddleware{
-		Realm:      "jacr-api",
-		Key:        []byte(conf.JWTSecret),
-		Timeout:    time.Hour * 24,
-		MaxRefresh: time.Hour * 24,
-
-		Authenticator: auth.Authenticate,
-		Authorizator:  auth.Authorize,
-		Unauthorized:  auth.Unauthorized,
-
-		// TimeFunc provides the current time. You can override it to use another time value. This is useful for testing or if your server uses a different time zone than your tokens.
-		TimeFunc: time.Now,
-	}
-}
-
-func getDatabaseMiddleware(db *pg.DB) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Set("db", db)
-		c.Next()
-	}
-}
-
 func loadTemplates(g *gin.Engine) {
 	g.LoadHTMLFiles("templates/responses.html")
 }
 
-func loadRoutes(db *pg.DB) {
+func loadRoutes(db *pg.DB, conf *config.Config) {
 	router := gin.Default()
-	router.Use(getDatabaseMiddleware(db))
+
+	// just for the old routes
+	router.Use(func(c *gin.Context) {
+		c.Set("db", db)
+		c.Next()
+	})
 
 	loadTemplates(router)
 
-	router.POST("/invite", slackHandler)
-	router.GET("/badge-social.svg", slackImageHandler)
-
 	oldRoutes(router)
 
-	authMiddleware := getJWTMiddleware(db)
-	verifyAuth := authMiddleware.MiddlewareFunc()
+	logger := log.StandardLogger()
+	logger.Level = log.DebugLevel
 
-	v2 := router.Group("/v2")
-
-	authGroup := v2.Group("/auth")
-	{
-		authGroup.POST("/login", authMiddleware.LoginHandler)
-		authGroup.POST("/register", auth.Register)
-	}
-
-	rootGroup := v2.Group("/")
-	{
-		noticesGroup := rootGroup.Group("/notices")
-		{
-			noticesGroup.GET("/", notices.List)
-			noticesGroup.PATCH("/", verifyAuth, notices.Patch)
-		}
-
-		responsesGroup := rootGroup.Group("/responses")
-		{
-			responsesGroup.GET("/", responses.List)
-		}
-	}
+	api.NewAPI(
+		logger,
+		db,
+		router,
+		conf,
+	)
 
 	http.ListenAndServe(conf.Address, router)
 	db.Close()
