@@ -3,15 +3,11 @@ package old
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-pg/pg"
+	"github.com/qaisjp/jacr-api/pkg/models"
 )
 
-type Response struct {
-	Cmds     []string `pg:",array"`
-	Messages []string `pg:",array"`
-}
-
 func ResponsesListEndpoint(c *gin.Context) {
-	list := make([]Response, 0)
+	list := make([]models.Response, 0)
 
 	db := c.Keys["db"].(*pg.DB)
 	_, err := db.Query(&list, `

@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"fmt"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-pg/pg"
@@ -20,7 +20,7 @@ func Authenticate(username string, password string, c *gin.Context) (userID int,
 			return
 		}
 
-		c.JSON(500, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",
 			"data":    nil,
 			"message": errors.Wrapf(err, "authentication query failed").Error(),
@@ -31,7 +31,7 @@ func Authenticate(username string, password string, c *gin.Context) (userID int,
 
 	err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
 	if (err != nil) && (err != bcrypt.ErrMismatchedHashAndPassword) {
-		c.JSON(500, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",
 			"data":    nil,
 			"message": errors.Wrapf(err, "could not compare hash and password").Error(),
@@ -39,8 +39,6 @@ func Authenticate(username string, password string, c *gin.Context) (userID int,
 
 		return
 	}
-
-	fmt.Println(err)
 
 	return u.ID, err != bcrypt.ErrMismatchedHashAndPassword
 }

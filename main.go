@@ -2,17 +2,19 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/qaisjp/jacr-api/pkg/api/auth"
 	"github.com/qaisjp/jacr-api/pkg/api/jwt"
+	"github.com/qaisjp/jacr-api/pkg/api/notices"
 	"github.com/qaisjp/jacr-api/pkg/api/old"
+	"github.com/qaisjp/jacr-api/pkg/api/responses"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-pg/pg"
+	log "github.com/sirupsen/logrus"
 )
 
 var conf = struct {
@@ -61,6 +63,9 @@ func main() {
 		Password: fs.Lookup("postgres_password").Value.String(),
 	})
 
+	// logger := log.StandardLogger()
+	// logger.Level = log.DebugLevel
+
 	_, err = db.Exec("SELECT 1")
 	if err != nil {
 		log.Print("Postgres connection error!\n")
@@ -68,14 +73,23 @@ func main() {
 	}
 	log.Print("Connected to PostgreSQL.\n")
 
+	db.OnQueryProcessed(func(event *pg.QueryProcessedEvent) {
+		query, err := event.FormattedQuery()
+		if err != nil {
+			panic(err)
+		}
+
+		log.Printf("%s %s", time.Since(event.StartTime), query)
+	})
+
 	loadRoutes(db)
 }
 
 func oldRoutes(router *gin.Engine) {
 	/////////LEGACY
-	motd_legacy := router.Group("/motd")
+	legacy := router.Group("/motd")
 	{
-		motd_legacy.GET("/list", old.MotdListEndpoint)
+		legacy.GET("/list", old.MotdListEndpoint)
 	}
 
 	router.GET("/api/current-song", old.CurrentSongEndpoint)
@@ -85,9 +99,9 @@ func oldRoutes(router *gin.Engine) {
 	///////////////
 
 	/////
-	user_face := router.Group("/user")
+	user := router.Group("/user")
 	{
-		user_face.GET("/responses", old.ResponsesListEndpoint)
+		user.GET("/responses", old.ResponsesListEndpoint)
 	}
 
 	// temporary cheats
@@ -133,6 +147,7 @@ func loadRoutes(db *pg.DB) {
 	oldRoutes(router)
 
 	authMiddleware := getJWTMiddleware(db)
+	verifyAuth := authMiddleware.MiddlewareFunc()
 
 	v2 := router.Group("/v2")
 
@@ -143,13 +158,19 @@ func loadRoutes(db *pg.DB) {
 	}
 
 	rootGroup := v2.Group("/")
-	rootGroup.Use(authMiddleware.MiddlewareFunc())
 	{
-		notices := rootGroup.Group("/notices")
+		noticesGroup := rootGroup.Group("/notices")
 		{
-			notices.GET("/", old.MotdListEndpoint)
+			noticesGroup.GET("/", notices.List)
+			noticesGroup.PATCH("/", verifyAuth, notices.Patch)
+		}
+
+		responsesGroup := rootGroup.Group("/responses")
+		{
+			responsesGroup.GET("/", responses.List)
 		}
 	}
 
 	http.ListenAndServe(conf.Address, router)
+	db.Close()
 }
