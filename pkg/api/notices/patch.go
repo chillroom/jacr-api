@@ -1,18 +1,18 @@
 package notices
 
 import (
-	"net/http"
-
 	"encoding/json"
-
 	"fmt"
-
+	"net/http"
+	"strconv"
 	"strings"
 
+	"github.com/qaisjp/jacr-api/pkg/models"
+
 	"github.com/gin-gonic/gin"
+	"github.com/go-pg/pg"
 	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
-	"github.com/qaisjp/jacr-api/pkg/models"
 )
 
 type NoticePatch struct {
@@ -25,19 +25,29 @@ type NoticePatch struct {
 func (i *Impl) Patch(c *gin.Context) {
 
 	patches := []NoticePatch{}
-	c.BindJSON(&patches)
+	if err := c.BindJSON(&patches); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Invalid JSON input",
+		})
+		return
+	}
 
-	newNotices := []models.Notice{}
-	removedNotices := []string{}
-	replacedNotices := []models.Notice{}
+	var newNotices []models.Notice
+	var removedNotices []int
+	var replacedNotices []models.Notice
 
 	for _, patch := range patches {
 		success := false
 		if (patch.Op == "add") && (patch.Path == "/-") {
-			var notice *models.Notice
-			err := json.Unmarshal(patch.Value, notice)
+			var notice models.Notice
+			err := json.Unmarshal(patch.Value, &notice)
 
-			success = (err == nil) && (notice != nil) && (notice.Message != "") && (notice.Title != "")
+			if err != nil {
+				i.Log.Warnf(err.Error())
+			}
+
+			success = (err == nil) && (notice.Message != "") && (notice.Title != "")
 			if success {
 				newNotices = append(newNotices, models.Notice{
 					Title:   slug.Make(notice.Title),
@@ -46,22 +56,23 @@ func (i *Impl) Patch(c *gin.Context) {
 			}
 		} else if (len(patch.Path) > 1) && (patch.Path[0] == '/') {
 			if patch.Op == "remove" {
-				removedNotices = append(removedNotices, patch.Path[1:])
-				success = true
+				i, err := strconv.Atoi(patch.Path[1:])
+				if err == nil {
+					removedNotices = append(removedNotices, i)
+					success = true
+				}
 			} else if patch.Op == "replace" {
-				var message string
-				err := json.Unmarshal(patch.Value, &message)
+				var notice models.Notice
 
-				success = (err == nil) && (message != "")
+				err := json.Unmarshal(patch.Value, &notice)
+
+				success = (err == nil) && (notice.ID != 0) && (notice.Title != "") && (notice.Message != "")
 				if success {
-					replacedNotices = append(replacedNotices, models.Notice{
-						Title:   patch.Path[1:],
-						Message: message,
-					})
+					notice.Title = slug.Make(notice.Title)
+					replacedNotices = append(replacedNotices, notice)
+					success = true
 				}
 			}
-		} else {
-			success = false
 		}
 
 		if !success {
@@ -74,26 +85,52 @@ func (i *Impl) Patch(c *gin.Context) {
 		}
 	}
 
-	removedNoticesInterface := make([]interface{}, len(removedNotices))
-	for i, v := range removedNotices {
-		fmt.Println(v)
-		removedNoticesInterface[i] = v
-	}
+	err := i.DB.RunInTransaction(func(tx *pg.Tx) error {
+		// Creations
+		if len(newNotices) > 0 {
+			err := i.DB.Insert(&newNotices)
+			if err != nil {
+				return err
+			}
+		}
 
-	query := "DELETE FROM notices WHERE false " + strings.Repeat(" or (title = ?)", len(removedNotices))
-	_, err := i.DB.Exec(query, removedNoticesInterface...)
+		if len(removedNotices) > 0 {
+			// Removals: make the []string an []interface{} so that the query method can use it
+			removedNoticesInterface := make([]interface{}, len(removedNotices))
+			for i, v := range removedNotices {
+				fmt.Println(v)
+				removedNoticesInterface[i] = v
+			}
+
+			// Removals: perform actual query
+			query := "DELETE FROM notices WHERE false " + strings.Repeat(" or (id = ?)", len(removedNotices))
+			_, err := i.DB.Exec(query, removedNoticesInterface...)
+			if err != nil {
+				return err
+			}
+		}
+
+		if len(replacedNotices) > 0 {
+			fmt.Println(replacedNotices)
+			// Replacements: perform query
+			_, err := i.DB.Model(&replacedNotices).Column("title", "message").Update()
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",
-			"message": errors.Wrap(err, "could not delete notices").Error(),
+			"message": errors.Wrapf(err, "Encountered errors in PATCH").Error(),
 		})
 		return
 	}
 
-	// _, err := db.Query(&, `SELECT * FROM notices`)
-
-	// c.JSON(http.StatusOK, gin.H{
-	// 	"status": "success",
-	// 	"data":   &notices,
-	// })
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+	})
 }

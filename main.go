@@ -45,6 +45,11 @@ func main() {
 		return
 	}
 
+	// var (
+	// 	db *sqlx.DB
+	// 	gq *goqu.Database
+	// )
+
 	db := pg.Connect(&pg.Options{
 		Addr:     fs.Lookup("postgres_addr").Value.String(),
 		User:     fs.Lookup("postgres_user").Value.String(),
@@ -58,7 +63,7 @@ func main() {
 		return
 	}
 
-	log.Infoln("Connected to PostgreSQL.")
+	log.Infoln("Connected to PostgreSQL (OLD).")
 
 	db.OnQueryProcessed(func(event *pg.QueryProcessedEvent) {
 		query, err := event.FormattedQuery()
