@@ -3,6 +3,9 @@ package auth
 import (
 	"net/http"
 
+	goqu "gopkg.in/doug-martin/goqu.v4"
+
+	"github.com/pkg/errors"
 	"github.com/qaisjp/jacr-api/pkg/models"
 
 	"github.com/asaskevich/govalidator"
@@ -16,14 +19,14 @@ func (i *Impl) Register(c *gin.Context) {
 	password := c.PostForm("password")
 	email := c.PostForm("email")
 
-	u := &models.User{
+	u := models.User{
 		Username: username,
 		Password: password,
 		Email:    email,
 		Slug:     slug.Make(username),
 	}
 
-	success, err := govalidator.ValidateStruct(u)
+	success, err := govalidator.ValidateStruct(&u)
 	if !success {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
@@ -32,13 +35,16 @@ func (i *Impl) Register(c *gin.Context) {
 		return
 	}
 
-	count := 0
+	count, err := i.GQ.From("users").Where(goqu.Or(
+		goqu.I("username").Eq(u.Username),
+		goqu.I("slug").Eq(u.Slug),
+		goqu.I("email").Eq(u.Email),
+	)).Count()
 
-	_, err = i.DB.Query(&count, "SELECT COUNT(id) from users WHERE (username = ?) or (slug = ?) or (email = ?)", u.Username, u.Slug, u.Email)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",
-			"message": err.Error(),
+			"message": errors.Wrapf(err, "could not check existence").Error(),
 		})
 		return
 	}
@@ -63,11 +69,14 @@ func (i *Impl) Register(c *gin.Context) {
 
 	u.Password = string(hashedPassword)
 
-	err = i.DB.Insert(u)
+	s := i.GQ.From("users").Insert(&u).Sql
+	i.Log.Println(s)
+	_, err = i.GQ.Exec(s)
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",
-			"message": err.Error(),
+			"message": errors.Wrap(err, "could not insert").Error(),
 		})
 
 		return

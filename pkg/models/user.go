@@ -1,13 +1,13 @@
 package models
 
 type User struct {
-	ID int
+	ID int `db:"id" goqu:"skipinsert"`
 
-	Username  string `valid:"stringlength(1|255),required"`
-	Password  string `valid:"stringlength(5|100),required"`
-	Email     string `valid:"email,stringlength(1|254),required"`
-	Slug      string `valid:"stringlength(1|255),required"`
-	Level     int
-	Banned    bool
-	Activated bool
+	Username  string `db:"username" valid:"stringlength(1|255),required"`
+	Password  string `db:"password" valid:"stringlength(5|100),required"`
+	Email     string `db:"email" valid:"email,stringlength(1|254),required"`
+	Slug      string `db:"slug" valid:"stringlength(1|255),required"`
+	Level     int    `db:"level"`
+	Banned    bool   `db:"banned"`
+	Activated bool   `db:"activated"`
 }

@@ -7,30 +7,32 @@ import (
 	"github.com/qaisjp/jacr-api/pkg/api/base"
 	"github.com/qaisjp/jacr-api/pkg/api/jwt"
 	"github.com/qaisjp/jacr-api/pkg/api/notices"
-	"github.com/qaisjp/jacr-api/pkg/api/old"
 	"github.com/qaisjp/jacr-api/pkg/api/responses"
 	"github.com/qaisjp/jacr-api/pkg/api/slack"
 	"github.com/qaisjp/jacr-api/pkg/config"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-pg/pg"
+	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
+	goqu "gopkg.in/doug-martin/goqu.v4"
 )
 
 // NewAPI sets up a new API module.
 func NewAPI(
-	log *logrus.Logger,
-	db *pg.DB,
 	conf *config.Config,
+	log *logrus.Logger,
+	db *sqlx.DB,
+	gq *goqu.Database,
 ) *base.API {
 
 	router := gin.Default()
 
 	a := &base.API{
+		Config: conf,
 		Log:    log,
 		DB:     db,
 		Gin:    router,
-		Config: conf,
+		GQ:     gq,
 	}
 
 	auth := auth.Impl{API: a}
@@ -64,24 +66,6 @@ func NewAPI(
 
 	responses := responses.Impl{API: a}
 	router.GET("/v2/responses/", responses.List)
-
-	{
-		router.LoadHTMLFiles("templates/responses.html")
-		router.Use(func(c *gin.Context) {
-			c.Set("db", db)
-			c.Next()
-		})
-		router.GET("/motd/list", old.MotdListEndpoint)
-
-		router.GET("/api/current-song", old.CurrentSongEndpoint)
-		router.GET("/api/op", old.OpListEndpoint)
-		router.GET("/api/history", old.HistoryListEndpoint)
-		router.GET("/api/history/:user", old.HistoryUserListEndpoint)
-
-		router.GET("/user/responses", old.ResponsesListEndpoint)
-
-		router.POST("/_/restart", old.RestartCheatEndpoint)
-	}
 
 	return a
 }

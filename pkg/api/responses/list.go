@@ -3,23 +3,29 @@ package responses
 import (
 	"net/http"
 
+	"encoding/json"
+
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
-	"github.com/qaisjp/jacr-api/pkg/models"
 )
 
 func (i *Impl) List(c *gin.Context) {
-	list := []models.Response{}
+	list := []struct {
+		Cmds     []byte `db:"cmds" pg:",array"`
+		Messages []byte `db:"messages" pg:",array"`
+	}{}
 
-	_, err := i.DB.Query(
-		&list,
-		`SELECT array_agg(cmds.name) as cmds, groups.messages FROM
+	err := i.GQ.ScanStructs(&list,
+		`SELECT array_to_json(array_agg(cmds.name)) as cmds, array_to_json(groups.messages) as messages FROM
 			response_commands as cmds,
 			response_groups as groups
 		WHERE
 			cmds.group = groups.id
 		GROUP BY groups.messages`,
 	)
+
+	// err := i.GQ.From(goqu.I("response_commands as cmds"), goqu.I("response_groups as groups")).
+	// 	Where(goqu.Ex{"cmds.group": goqu.I("groups.id")}).GroupBy("groups.messages").Select("array_agg(cmds.name) as cmds", "groups.messages").ScanStructs(&list)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -29,8 +35,31 @@ func (i *Impl) List(c *gin.Context) {
 		return
 	}
 
+	outList := make([]struct {
+		Cmds     []string
+		Messages []string
+	}, len(list))
+
+	for i, response := range list {
+		out := &outList[i]
+
+		err := json.Unmarshal(response.Cmds, &out.Cmds)
+		if err != nil {
+			panic(err)
+		}
+
+		err = json.Unmarshal(response.Messages, &out.Messages)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	// for _, r := range list {
+	// 	i.Log.Info(string(r.Cmds), string(r.Messages))
+	// }
+
 	c.JSON(http.StatusOK, gin.H{
 		"status": "success",
-		"data":   list,
+		"data":   outList,
 	})
 }

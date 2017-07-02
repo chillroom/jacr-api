@@ -12,7 +12,8 @@ import (
 func (i *Impl) List(c *gin.Context) {
 
 	var notices []models.Notice
-	_, err := i.DB.Query(&notices, `SELECT * FROM notices`)
+	err := i.GQ.From("notices").Select().ScanStructs(&notices)
+	// _, err := i.DB.Query(&notices, `SELECT * FROM notices`)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

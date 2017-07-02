@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
+
+	goqu "gopkg.in/doug-martin/goqu.v4"
 
 	"github.com/qaisjp/jacr-api/pkg/models"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-pg/pg"
 	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
 )
@@ -85,10 +85,19 @@ func (i *Impl) Patch(c *gin.Context) {
 		}
 	}
 
-	err := i.DB.RunInTransaction(func(tx *pg.Tx) error {
+	tx, err := i.GQ.Begin()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "Could not start transaction",
+		})
+		return
+	}
+
+	err = tx.Wrap(func() error {
 		// Creations
 		if len(newNotices) > 0 {
-			err := i.DB.Insert(&newNotices)
+			_, err := tx.From("notices").Insert(newNotices).Exec()
 			if err != nil {
 				return err
 			}
@@ -96,15 +105,13 @@ func (i *Impl) Patch(c *gin.Context) {
 
 		if len(removedNotices) > 0 {
 			// Removals: make the []string an []interface{} so that the query method can use it
-			removedNoticesInterface := make([]interface{}, len(removedNotices))
+			removedNoticesExpression := make([]goqu.Expression, len(removedNotices))
 			for i, v := range removedNotices {
-				fmt.Println(v)
-				removedNoticesInterface[i] = v
+				removedNoticesExpression[i] = goqu.I("id").Eq(v)
 			}
 
 			// Removals: perform actual query
-			query := "DELETE FROM notices WHERE false " + strings.Repeat(" or (id = ?)", len(removedNotices))
-			_, err := i.DB.Exec(query, removedNoticesInterface...)
+			_, err := tx.From("notices").Where(goqu.Or(removedNoticesExpression...)).Delete().Exec()
 			if err != nil {
 				return err
 			}
@@ -113,9 +120,12 @@ func (i *Impl) Patch(c *gin.Context) {
 		if len(replacedNotices) > 0 {
 			fmt.Println(replacedNotices)
 			// Replacements: perform query
-			_, err := i.DB.Model(&replacedNotices).Column("title", "message").Update()
-			if err != nil {
-				return err
+			for _, notice := range replacedNotices {
+				_, err := tx.From("notices").Update(&notice).Exec()
+				// _, err := i.DB.Model(&replacedNotices).Column("title", "message").Update()
+				if err != nil {
+					return err
+				}
 			}
 		}
 

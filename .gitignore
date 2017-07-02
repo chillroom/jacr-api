@@ -1,5 +1,5 @@
 dev_backup
-*.conf
+config.yaml
 !example_api.conf
 .pm2_*
 

@@ -1,93 +1,84 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/qaisjp/jacr-api/pkg/api"
+	"github.com/qaisjp/jacr-api/pkg/api/old"
 	"github.com/qaisjp/jacr-api/pkg/config"
+	"github.com/qaisjp/jacr-api/pkg/database"
+	"github.com/sirupsen/logrus"
 
-	"github.com/go-pg/pg"
-	log "github.com/sirupsen/logrus"
+	"github.com/jmoiron/sqlx"
+	"github.com/koding/multiconfig"
+	"gopkg.in/doug-martin/goqu.v4"
 )
 
 func main() {
 	var err error
 
-	fs := getFlagSet()
-	fs.Parse(os.Args[1:])
+	m := multiconfig.NewWithPath(os.Getenv("config"))
+	cfg := &config.Config{}
+	m.MustLoad(cfg)
 
-	conf := &config.Config{}
-
-	conf.SlackURL = fs.Lookup("slack_url").Value.String()
-	if conf.SlackURL == "" {
-		fmt.Println("slack_url is empty")
-		return
-	}
-	conf.SlackToken = fs.Lookup("slack_token").Value.String()
-	if conf.SlackToken == "" {
-		fmt.Println("slack_token is empty")
-		return
-	}
-	conf.SlackChannels = fs.Lookup("slack_channels").Value.String()
-	if conf.SlackChannels == "" {
-		fmt.Println("slack_channels is empty")
-		return
-	}
-
-	conf.Address = fs.Lookup("http_address").Value.String()
-
-	conf.JWTSecret = fs.Lookup("jwt_secret").Value.String()
-	if conf.JWTSecret == "" {
-		fmt.Println("jwt_secret is empty")
-		return
-	}
-
-	// var (
-	// 	db *sqlx.DB
-	// 	gq *goqu.Database
-	// )
-
-	db := pg.Connect(&pg.Options{
-		Addr:     fs.Lookup("postgres_addr").Value.String(),
-		User:     fs.Lookup("postgres_user").Value.String(),
-		Database: fs.Lookup("postgres_database").Value.String(),
-		Password: fs.Lookup("postgres_password").Value.String(),
-	})
-
-	_, err = db.Exec("SELECT 1")
+	logLevel, err := logrus.ParseLevel(cfg.LogLevel)
 	if err != nil {
-		log.Fatal("Postgres connection error!")
-		return
+		panic(err)
 	}
 
-	log.Infoln("Connected to PostgreSQL (OLD).")
+	logger := logrus.StandardLogger()
+	logger.Level = logLevel
 
-	db.OnQueryProcessed(func(event *pg.QueryProcessedEvent) {
-		query, err := event.FormattedQuery()
+	logger.WithFields(logrus.Fields{
+		"module": "init",
+	}).Info("Starting up the application")
+
+	// Initialize the database
+	var (
+		db *sqlx.DB
+		gq *goqu.Database
+	)
+	switch *cfg.Database {
+	case config.Postgres:
+		db, gq, err = database.NewPostgres(cfg.Postgres)
 		if err != nil {
-			panic(err)
+			logger.WithFields(logrus.Fields{
+				"module": "init",
+				"error":  err.Error(),
+				"cstr":   cfg.Postgres.ConnectionString,
+			}).Fatal("Unable to connect to the Postgres server")
+			return
 		}
 
-		log.Printf("%s %s", time.Since(event.StartTime), query)
-	})
-
-	loadRoutes(db, conf)
-}
-
-func loadRoutes(db *pg.DB, conf *config.Config) {
-	defer db.Close()
-
-	logger := log.StandardLogger()
-	logger.Level = log.DebugLevel
+		logger.WithFields(logrus.Fields{
+			"module": "init",
+			"cstr":   cfg.Postgres.ConnectionString,
+		}).Info("Connected to a Postgres server")
+	}
 
 	api := api.NewAPI(
+		cfg,
 		logger,
 		db,
-		conf,
+		gq,
 	)
 
-	http.ListenAndServe(conf.Address, api.Gin)
+	{
+		router := api.Gin
+		router.LoadHTMLFiles("templates/responses.html")
+
+		router.GET("/motd/list", old.MotdListEndpoint)
+
+		router.GET("/api/current-song", old.CurrentSongEndpoint)
+		router.GET("/api/op", old.OpListEndpoint)
+		router.GET("/api/history", old.HistoryListEndpoint)
+		router.GET("/api/history/:user", old.HistoryUserListEndpoint)
+
+		router.GET("/user/responses", old.ResponsesListEndpoint)
+
+		router.POST("/_/restart", old.RestartCheatEndpoint)
+	}
+
+	http.ListenAndServe(cfg.Address, api.Gin)
 }
