@@ -3,8 +3,6 @@ package auth
 import (
 	"net/http"
 
-	goqu "gopkg.in/doug-martin/goqu.v4"
-
 	"github.com/pkg/errors"
 	"github.com/qaisjp/jacr-api/pkg/models"
 
@@ -35,11 +33,14 @@ func (i *Impl) Register(c *gin.Context) {
 		return
 	}
 
-	count, err := i.GQ.From("users").Where(goqu.Or(
-		goqu.I("username").Eq(u.Username),
-		goqu.I("slug").Eq(u.Slug),
-		goqu.I("email").Eq(u.Email),
-	)).Count()
+	var count int
+	err = i.DB.Get(
+		&count,
+		"select count(id) from users where (username = $1) or (slug = $2) or (email = $3)",
+		u.Username,
+		u.Slug,
+		u.Email,
+	)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -69,9 +70,7 @@ func (i *Impl) Register(c *gin.Context) {
 
 	u.Password = string(hashedPassword)
 
-	s := i.GQ.From("users").Insert(&u).Sql
-	i.Log.Println(s)
-	_, err = i.GQ.Exec(s)
+	_, err = i.DB.NamedExec("insert into users (username, password, email, slug) values (:username, :password, :email, :slug)", &u)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

@@ -1,7 +1,6 @@
 package old
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 
@@ -20,7 +19,6 @@ func RestartCheatEndpoint(c *gin.Context) {
 	out, err := cmd.CombinedOutput()
 
 	if err != nil {
-		fmt.Println(string(out))
 		c.String(501, "Failed to restart: "+string(out))
 		return
 	}

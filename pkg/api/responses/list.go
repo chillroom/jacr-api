@@ -15,7 +15,7 @@ func (i *Impl) List(c *gin.Context) {
 		Messages []byte `db:"messages" pg:",array"`
 	}{}
 
-	err := i.GQ.ScanStructs(&list,
+	err := i.DB.Select(&list,
 		`SELECT array_to_json(array_agg(cmds.name)) as cmds, array_to_json(groups.messages) as messages FROM
 			response_commands as cmds,
 			response_groups as groups

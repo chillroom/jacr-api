@@ -5,16 +5,21 @@ import (
 
 	"github.com/qaisjp/jacr-api/pkg/models"
 
+	"database/sql"
+
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
-	goqu "gopkg.in/doug-martin/goqu.v4"
 )
 
 func (i *Impl) Authenticate(username string, password string, c *gin.Context) (userID int, success bool) {
 	var u models.User
 
-	found, err := i.GQ.From("users").Where(goqu.Ex{"username": username}).ScanStruct(&u)
+	err := i.DB.Get(&u, "SELECT * FROM users WHERE username = $1", username)
+
+	if err == sql.ErrNoRows {
+		return
+	}
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -23,10 +28,6 @@ func (i *Impl) Authenticate(username string, password string, c *gin.Context) (u
 			"message": errors.Wrapf(err, "authentication query failed").Error(),
 		})
 
-		return
-	}
-
-	if !found {
 		return
 	}
 

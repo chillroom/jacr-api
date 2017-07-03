@@ -12,7 +12,7 @@ import (
 func (i *Impl) List(c *gin.Context) {
 
 	var notices []models.Notice
-	err := i.GQ.From("notices").Select().ScanStructs(&notices)
+	err := i.DB.Select(&notices, "SELECT * FROM notices")
 	// _, err := i.DB.Query(&notices, `SELECT * FROM notices`)
 
 	if err != nil {

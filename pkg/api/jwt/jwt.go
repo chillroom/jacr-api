@@ -21,7 +21,7 @@ type GinJWTMiddleware struct {
 
 	// signing algorithm - possible values are HS256, HS384, HS512
 	// Optional, default is HS256.
-	SigningAlgorithm string
+	signingAlgorithm string
 
 	// Secret key used for signing. Required.
 	Key []byte
@@ -72,9 +72,7 @@ type Login struct {
 // MiddlewareInit initialize jwt configs.
 func (mw *GinJWTMiddleware) MiddlewareInit() error {
 
-	if mw.SigningAlgorithm == "" {
-		mw.SigningAlgorithm = "HS256"
-	}
+	mw.signingAlgorithm = "HS256"
 
 	if mw.Timeout == 0 {
 		mw.Timeout = time.Hour
@@ -89,12 +87,7 @@ func (mw *GinJWTMiddleware) MiddlewareInit() error {
 	}
 
 	if mw.Unauthorized == nil {
-		mw.Unauthorized = func(c *gin.Context, code int, message string) {
-			c.JSON(code, gin.H{
-				"code":    code,
-				"message": message,
-			})
-		}
+		panic("unauthorized not providded")
 	}
 
 	if mw.IdentityHandler == nil {
@@ -167,8 +160,7 @@ func (mw *GinJWTMiddleware) LoginHandler(c *gin.Context) {
 	}
 
 	if mw.Authenticator == nil {
-		mw.unauthorized(c, http.StatusInternalServerError, "Missing define authenticator func")
-		return
+		panic("Missing define authenticator func")
 	}
 
 	userID, ok := mw.Authenticator(loginVals.Username, loginVals.Password, c)
@@ -178,7 +170,7 @@ func (mw *GinJWTMiddleware) LoginHandler(c *gin.Context) {
 	}
 
 	// Create the token
-	token := jwt.New(jwt.GetSigningMethod(mw.SigningAlgorithm))
+	token := jwt.New(jwt.GetSigningMethod(mw.signingAlgorithm))
 	claims := token.Claims.(jwt.MapClaims)
 
 	if mw.PayloadFunc != nil {
@@ -223,7 +215,7 @@ func (mw *GinJWTMiddleware) RefreshHandler(c *gin.Context) {
 	}
 
 	// Create the token
-	newToken := jwt.New(jwt.GetSigningMethod(mw.SigningAlgorithm))
+	newToken := jwt.New(jwt.GetSigningMethod(mw.signingAlgorithm))
 	newClaims := newToken.Claims.(jwt.MapClaims)
 
 	for key := range claims {
@@ -309,7 +301,7 @@ func (mw *GinJWTMiddleware) parseToken(c *gin.Context) (*jwt.Token, error) {
 	}
 
 	return jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
-		if jwt.GetSigningMethod(mw.SigningAlgorithm) != token.Method {
+		if jwt.GetSigningMethod(mw.signingAlgorithm) != token.Method {
 			return nil, errors.New("invalid signing algorithm")
 		}
 

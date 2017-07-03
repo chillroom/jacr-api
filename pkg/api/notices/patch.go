@@ -6,13 +6,12 @@ import (
 	"net/http"
 	"strconv"
 
-	goqu "gopkg.in/doug-martin/goqu.v4"
-
 	"github.com/qaisjp/jacr-api/pkg/models"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gosimple/slug"
+	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
+	"github.com/qaisjp/jacr-api/pkg/database"
 )
 
 type NoticePatch struct {
@@ -50,27 +49,26 @@ func (i *Impl) Patch(c *gin.Context) {
 			success = (err == nil) && (notice.Message != "") && (notice.Title != "")
 			if success {
 				newNotices = append(newNotices, models.Notice{
-					Title:   slug.Make(notice.Title),
+					Title:   notice.Title,
 					Message: notice.Message,
 				})
 			}
 		} else if (len(patch.Path) > 1) && (patch.Path[0] == '/') {
-			if patch.Op == "remove" {
-				i, err := strconv.Atoi(patch.Path[1:])
-				if err == nil {
-					removedNotices = append(removedNotices, i)
+			id, err := strconv.Atoi(patch.Path[1:])
+			if err == nil {
+				if patch.Op == "remove" {
+					removedNotices = append(removedNotices, id)
 					success = true
-				}
-			} else if patch.Op == "replace" {
-				var notice models.Notice
+				} else if patch.Op == "replace" {
+					var notice models.Notice
 
-				err := json.Unmarshal(patch.Value, &notice)
+					err := json.Unmarshal(patch.Value, &notice)
 
-				success = (err == nil) && (notice.ID != 0) && (notice.Title != "") && (notice.Message != "")
-				if success {
-					notice.Title = slug.Make(notice.Title)
-					replacedNotices = append(replacedNotices, notice)
-					success = true
+					success = (err == nil) && (notice.Title != "") && (notice.Message != "")
+					if success {
+						notice.ID = id
+						replacedNotices = append(replacedNotices, notice)
+					}
 				}
 			}
 		}
@@ -85,48 +83,76 @@ func (i *Impl) Patch(c *gin.Context) {
 		}
 	}
 
-	tx, err := i.GQ.Begin()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  "error",
-			"message": "Could not start transaction",
-		})
-		return
-	}
+	err := database.RunInTransaction(i.DB, func(tx *sqlx.Tx) error {
+		// Replacements
+		if len(replacedNotices) > 0 {
+			sqlStr := `
+				update notices as n
+				set
+					title=c.title,
+					message=c.message
+				from (values`
 
-	err = tx.Wrap(func() error {
-		// Creations
-		if len(newNotices) > 0 {
-			_, err := tx.From("notices").Insert(newNotices).Exec()
-			if err != nil {
-				return err
+			vals := make([]interface{}, len(replacedNotices)*2)
+
+			for i, row := range replacedNotices {
+				num := (i * 2)
+
+				sqlStr += fmt.Sprintf(" (%#v, $%d, $%d),", row.ID, num+1, num+2)
+
+				vals[num] = row.Title
+				vals[num+1] = row.Message
+				// vals = append(vals, row.ID, row.Title, row.Message)
 			}
+
+			// trim the last ,
+			sqlStr = sqlStr[0:len(sqlStr)-1] + `
+				) as c(id, title, message)
+				where c.id = n.id;
+			`
+
+			tx.MustExec(sqlStr, vals...)
+
+			// tx.MustExec(sqlStr,
+			fmt.Println("aok")
 		}
 
 		if len(removedNotices) > 0 {
-			// Removals: make the []string an []interface{} so that the query method can use it
-			removedNoticesExpression := make([]goqu.Expression, len(removedNotices))
+			// Removals: make the []int an []interface{} so that the query method can use it
+			vals := make([]interface{}, len(removedNotices))
+
 			for i, v := range removedNotices {
-				removedNoticesExpression[i] = goqu.I("id").Eq(v)
+				vals[i] = v
 			}
 
 			// Removals: perform actual query
-			_, err := tx.From("notices").Where(goqu.Or(removedNoticesExpression...)).Delete().Exec()
-			if err != nil {
-				return err
+			query := "DELETE FROM notices WHERE false "
+			for i := range removedNotices {
+				query += fmt.Sprintf(" or (id = $%d)", i+1)
 			}
+
+			tx.MustExec(query, vals...)
 		}
 
-		if len(replacedNotices) > 0 {
-			fmt.Println(replacedNotices)
-			// Replacements: perform query
-			for _, notice := range replacedNotices {
-				_, err := tx.From("notices").Update(&notice).Exec()
-				// _, err := i.DB.Model(&replacedNotices).Column("title", "message").Update()
-				if err != nil {
-					return err
-				}
+		// Creations
+		if len(newNotices) > 0 {
+			sqlStr := "INSERT INTO notices(title, message) VALUES "
+			vals := make([]interface{}, len(newNotices)*2)
+
+			for i, row := range newNotices {
+				num := (i * 2)
+
+				sqlStr += fmt.Sprintf("($%d, $%d),", num+1, num+2)
+				vals[num] = row.Title
+				vals[num+1] = row.Message
 			}
+
+			// trim the last ,
+			sqlStr = sqlStr[0 : len(sqlStr)-1]
+
+			fmt.Println(sqlStr)
+
+			tx.MustExec(sqlStr, vals...)
 		}
 
 		return nil

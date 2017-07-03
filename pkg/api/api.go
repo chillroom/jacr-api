@@ -14,7 +14,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
-	goqu "gopkg.in/doug-martin/goqu.v4"
 )
 
 // NewAPI sets up a new API module.
@@ -22,7 +21,6 @@ func NewAPI(
 	conf *config.Config,
 	log *logrus.Logger,
 	db *sqlx.DB,
-	gq *goqu.Database,
 ) *base.API {
 
 	router := gin.Default()
@@ -32,7 +30,6 @@ func NewAPI(
 		Log:    log,
 		DB:     db,
 		Gin:    router,
-		GQ:     gq,
 	}
 
 	auth := auth.Impl{API: a}

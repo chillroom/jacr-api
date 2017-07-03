@@ -6,7 +6,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
-	goqu "gopkg.in/doug-martin/goqu.v4"
 )
 
 // API contains all the dependencies of the API server
@@ -15,5 +14,4 @@ type API struct {
 	Log    *logrus.Logger
 	DB     *sqlx.DB
 	Gin    *gin.Engine
-	GQ     *goqu.Database
 }
