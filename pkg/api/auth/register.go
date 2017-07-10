@@ -36,7 +36,7 @@ func (i *Impl) Register(c *gin.Context) {
 	var count int
 	err = i.DB.Get(
 		&count,
-		"select count(id) from users where (username = $1) or (slug = $2) or (email = $3)",
+		"select count(id) from accounts where (username = $1) or (slug = $2) or (email = $3)",
 		u.Username,
 		u.Slug,
 		u.Email,
@@ -70,7 +70,7 @@ func (i *Impl) Register(c *gin.Context) {
 
 	u.Password = string(hashedPassword)
 
-	_, err = i.DB.NamedExec("insert into users (username, password, email, slug) values (:username, :password, :email, :slug)", &u)
+	_, err = i.DB.NamedExec("insert into accounts (username, password, email, slug) values (:username, :password, :email, :slug)", &u)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

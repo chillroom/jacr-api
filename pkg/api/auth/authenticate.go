@@ -15,7 +15,7 @@ import (
 func (i *Impl) Authenticate(username string, password string, c *gin.Context) (userID int, success bool) {
 	var u models.User
 
-	err := i.DB.Get(&u, "SELECT * FROM users WHERE username = $1", username)
+	err := i.DB.Get(&u, "SELECT * FROM accounts WHERE username = $1", username)
 
 	if err == sql.ErrNoRows {
 		return
