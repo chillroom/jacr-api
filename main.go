@@ -61,14 +61,10 @@ func main() {
 		router := api.Gin
 		router.LoadHTMLFiles("templates/responses.html")
 
-		router.GET("/motd/list", old.MotdListEndpoint)
-
 		router.GET("/api/current-song", old.CurrentSongEndpoint)
 		router.GET("/api/op", old.OpListEndpoint)
 		router.GET("/api/history", old.HistoryListEndpoint)
 		router.GET("/api/history/:user", old.HistoryUserListEndpoint)
-
-		router.GET("/user/responses", old.ResponsesListEndpoint)
 
 		router.POST("/_/restart", old.RestartCheatEndpoint)
 	}
