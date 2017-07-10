@@ -56,8 +56,8 @@ func NewAPI(
 	verifyAuth := authMiddleware.MiddlewareFunc()
 
 	slack := slack.Impl{API: a}
-	router.POST("/invite", slack.SlackHandler)
-	router.GET("/badge-social.svg", slack.CheckOrigin, slack.SlackImageHandler)
+	router.POST("/v2/slack/invite", slack.Invite)
+	router.GET("/v2/slack/badge.svg", slack.CheckOrigin, slack.Badge)
 
 	notices := notices.Impl{API: a}
 	router.GET("/v2/notices/", notices.List)
