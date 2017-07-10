@@ -5,6 +5,7 @@ import (
 
 	"github.com/qaisjp/jacr-api/pkg/api/auth"
 	"github.com/qaisjp/jacr-api/pkg/api/base"
+	"github.com/qaisjp/jacr-api/pkg/api/history"
 	"github.com/qaisjp/jacr-api/pkg/api/jwt"
 	"github.com/qaisjp/jacr-api/pkg/api/notices"
 	"github.com/qaisjp/jacr-api/pkg/api/responses"
@@ -63,6 +64,9 @@ func NewAPI(
 
 	responses := responses.Impl{API: a}
 	router.GET("/v2/responses/", responses.List)
+
+	history := history.Impl{API: a}
+	router.GET("/v2/history/", history.List)
 
 	return a
 }
