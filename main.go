@@ -66,7 +66,6 @@ func main() {
 		router.GET("/api/history", old.HistoryListEndpoint)
 		router.GET("/api/history/:user", old.HistoryUserListEndpoint)
 
-		router.POST("/_/restart", old.RestartCheatEndpoint)
 	}
 
 	http.ListenAndServe(cfg.Address, api.Gin)
