@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/qaisjp/jacr-api/pkg/api"
-	"github.com/qaisjp/jacr-api/pkg/api/old"
 	"github.com/qaisjp/jacr-api/pkg/config"
 	"github.com/qaisjp/jacr-api/pkg/database"
 	"github.com/sirupsen/logrus"
@@ -60,11 +59,6 @@ func main() {
 	{
 		router := api.Gin
 		router.LoadHTMLFiles("templates/responses.html")
-
-		router.GET("/api/current-song", old.CurrentSongEndpoint)
-		router.GET("/api/op", old.OpListEndpoint)
-		router.GET("/api/history", old.HistoryListEndpoint)
-		router.GET("/api/history/:user", old.HistoryUserListEndpoint)
 
 	}
 
