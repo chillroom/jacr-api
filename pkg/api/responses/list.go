@@ -24,9 +24,6 @@ func (i *Impl) List(c *gin.Context) {
 		GROUP BY groups.messages`,
 	)
 
-	// err := i.GQ.From(goqu.I("response_commands as cmds"), goqu.I("response_groups as groups")).
-	// 	Where(goqu.Ex{"cmds.group": goqu.I("groups.id")}).GroupBy("groups.messages").Select("array_agg(cmds.name) as cmds", "groups.messages").ScanStructs(&list)
-
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",

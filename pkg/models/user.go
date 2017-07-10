@@ -3,7 +3,7 @@ package models
 import "time"
 
 type User struct {
-	ID int `db:"id" goqu:"skipinsert"`
+	ID int `db:"id"`
 
 	Username  string    `db:"username" valid:"stringlength(1|255),required"`
 	Password  string    `db:"password" valid:"stringlength(5|100),required"`

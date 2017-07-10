@@ -7,7 +7,7 @@ import (
 )
 
 type Song struct {
-	ID         int        `db:"id" goqu:"skipinsert"`
+	ID         int        `db:"id"`
 	Fkid       string     `db:"fkid"`
 	Name       string     `db:"name"`
 	LastPlay   time.Time  `db:"last_play"`

@@ -3,7 +3,7 @@ package models
 import "time"
 
 type History struct {
-	ID        int       `db:"id" goqu:"skipinsert"`
+	ID        int       `db:"id"`
 	DubID     string    `db:"dub_id"`
 	ScoreDown int       `db:"score_down"`
 	ScoreGrab int       `db:"score_grab"`
