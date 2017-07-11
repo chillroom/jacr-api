@@ -56,11 +56,5 @@ func main() {
 		db,
 	)
 
-	{
-		router := api.Gin
-		router.LoadHTMLFiles("templates/responses.html")
-
-	}
-
 	http.ListenAndServe(cfg.Address, api.Gin)
 }
