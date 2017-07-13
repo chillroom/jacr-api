@@ -2,6 +2,7 @@ package statistics
 
 import (
 	"context"
+	"fmt"
 
 	"time"
 
@@ -11,9 +12,10 @@ import (
 )
 
 type Generator struct {
-	time.Duration
-	Next      <-chan time.Time
-	Generator func(s *Statistics) error
+	Name     string
+	Query    string
+	Duration time.Duration
+	Next     <-chan time.Time
 }
 
 // Statistics contains all the dependencies of the Statistics Generation server
@@ -23,6 +25,7 @@ type Statistics struct {
 	DB     *sqlx.DB
 
 	Generators []*Generator
+	// Queue      chan *Generator
 }
 
 // NewStatistics sets up a new Statistics module
@@ -38,16 +41,14 @@ func NewStatistics(
 		DB:     db,
 	}
 
-	for _, gen := range []*Generator{DJCountGenerator, TotalTrackVotes} {
-		gen.Next = time.After(0)
-		s.AddGenerator(gen)
+	s.AddGenerators()
+
+	// Initialise each generator by running them
+	for _, gen := range s.Generators {
+		gen.Next = time.After(time.Second * 5)
 	}
 
 	return s
-}
-
-func (a *Statistics) AddGenerator(gen *Generator) {
-	a.Generators = append(a.Generators, gen)
 }
 
 // Start begins handling all of the statistic generators in the queue.
@@ -56,11 +57,26 @@ func (a *Statistics) Start() error {
 		for _, stat := range a.Generators {
 			select {
 			case <-stat.Next:
-				if err := stat.Generator(a); err != nil {
+				query := fmt.Sprintf(`
+					with result as (%s)
+					insert into statistics (name, value)
+					select $1, to_json(value) from result
+					ON CONFLICT (name) DO UPDATE SET value = excluded.value
+				`, stat.Query)
+
+				_, err := a.DB.Exec(query, stat.Name)
+
+				if err != nil {
 					a.Log.WithFields(logrus.Fields{
-						"module": "statistics",
-						"error":  err.Error(),
-					}).Warnf("Generator failed to run")
+						"module":    "statistics",
+						"error":     err.Error(),
+						"generator": stat.Name,
+					}).Warn("Generator failed to run")
+				} else {
+					a.Log.WithFields(logrus.Fields{
+						"module":    "statistics",
+						"generator": stat.Name,
+					}).Info("Generator succeeded")
 				}
 
 				stat.Next = time.After(stat.Duration)
