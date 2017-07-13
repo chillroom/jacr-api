@@ -82,5 +82,14 @@ func GetGenerators() []*Generator {
 			`,
 			Duration: time.Hour * 12,
 		},
+
+		{
+			Name: "top-karma",
+			Query: `
+				select array_to_json(array_agg(t)) as value from
+				(select id, dubtrack_users.username, karma from dubtrack_users order by karma desc limit 3) as t
+			`,
+			Duration: time.Hour * 24,
+		},
 	}
 }
