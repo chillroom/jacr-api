@@ -11,13 +11,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Generator struct {
-	Name     string
-	Query    string
-	Duration time.Duration
-	Next     <-chan time.Time
-}
-
 // Statistics contains all the dependencies of the Statistics Generation server
 type Statistics struct {
 	Config *config.Config
@@ -25,7 +18,7 @@ type Statistics struct {
 	DB     *sqlx.DB
 
 	Generators []*Generator
-	// Queue      chan *Generator
+	Queue      chan *Generator
 }
 
 // NewStatistics sets up a new Statistics module
@@ -41,7 +34,7 @@ func NewStatistics(
 		DB:     db,
 	}
 
-	s.AddGenerators()
+	s.Generators = GetGenerators()
 
 	// Initialise each generator by running them
 	for _, gen := range s.Generators {

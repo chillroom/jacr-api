@@ -2,8 +2,15 @@ package statistics
 
 import "time"
 
-func (s *Statistics) AddGenerators() {
-	gens := []*Generator{
+type Generator struct {
+	Name     string
+	Query    string
+	Duration time.Duration
+	Next     <-chan time.Time
+}
+
+func GetGenerators() []*Generator {
+	return []*Generator{
 		{
 			Name:     "dj-count",
 			Query:    "select count(distinct history.user) as value from history",
@@ -53,6 +60,4 @@ func (s *Statistics) AddGenerators() {
 			Duration: time.Hour * 12,
 		},
 	}
-
-	s.Generators = append(s.Generators, gens...)
 }
