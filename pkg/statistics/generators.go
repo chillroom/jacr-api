@@ -1,12 +1,35 @@
 package statistics
 
-import "time"
+import (
+	"fmt"
+	"time"
+
+	"github.com/jmoiron/sqlx"
+)
 
 type Generator struct {
 	Name     string
 	Query    string
 	Duration time.Duration
-	Next     <-chan time.Time
+}
+
+func (g *Generator) Spawn(queue chan *Generator) {
+	for {
+		queue <- g
+		time.Sleep(g.Duration)
+	}
+}
+
+func (g *Generator) Run(db *sqlx.DB) error {
+	query := fmt.Sprintf(`
+		with result as (%s)
+		insert into statistics (name, value)
+		select $1, to_json(value) from result
+		ON CONFLICT (name) DO UPDATE SET value = excluded.value
+	`, g.Query)
+
+	_, err := db.Exec(query, g.Name)
+	return err
 }
 
 func GetGenerators() []*Generator {

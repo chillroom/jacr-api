@@ -2,9 +2,6 @@ package statistics
 
 import (
 	"context"
-	"fmt"
-
-	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/qaisjp/jacr-api/pkg/config"
@@ -35,46 +32,32 @@ func NewStatistics(
 	}
 
 	s.Generators = GetGenerators()
+	s.Queue = make(chan *Generator, 2) // only process two at a time I guess?
 
 	// Initialise each generator by running them
 	for _, gen := range s.Generators {
-		gen.Next = time.After(time.Second * 5)
+		go gen.Spawn(s.Queue)
 	}
 
 	return s
 }
 
 // Start begins handling all of the statistic generators in the queue.
-func (a *Statistics) Start() error {
-	for {
-		for _, stat := range a.Generators {
-			select {
-			case <-stat.Next:
-				query := fmt.Sprintf(`
-					with result as (%s)
-					insert into statistics (name, value)
-					select $1, to_json(value) from result
-					ON CONFLICT (name) DO UPDATE SET value = excluded.value
-				`, stat.Query)
+func (a *Statistics) Start() {
+	for stat := range a.Queue {
+		err := stat.Run(a.DB)
 
-				_, err := a.DB.Exec(query, stat.Name)
-
-				if err != nil {
-					a.Log.WithFields(logrus.Fields{
-						"module":    "statistics",
-						"error":     err.Error(),
-						"generator": stat.Name,
-					}).Warn("Generator failed to run")
-				} else {
-					a.Log.WithFields(logrus.Fields{
-						"module":    "statistics",
-						"generator": stat.Name,
-					}).Info("Generator succeeded")
-				}
-
-				stat.Next = time.After(stat.Duration)
-			default:
-			}
+		if err != nil {
+			a.Log.WithFields(logrus.Fields{
+				"module":    "statistics",
+				"error":     err.Error(),
+				"generator": stat.Name,
+			}).Warn("Generator failed to run")
+		} else {
+			a.Log.WithFields(logrus.Fields{
+				"module":    "statistics",
+				"generator": stat.Name,
+			}).Info("Generator succeeded")
 		}
 	}
 }

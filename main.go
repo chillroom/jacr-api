@@ -86,12 +86,7 @@ func main() {
 			"bind":   cfg.Address,
 		}).Info("Starting the Statistics server")
 
-		if err := statistics.Start(); err != nil {
-			logger.WithFields(logrus.Fields{
-				"module": "init",
-				"error":  err.Error(),
-			}).Fatal("Statistics server failed")
-		}
+		statistics.Start()
 	}()
 
 	// Create a new signal receiver
