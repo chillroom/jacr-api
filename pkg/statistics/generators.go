@@ -35,7 +35,7 @@ func (g *Generator) Run(db *sqlx.DB) error {
 func GetGenerators() []*Generator {
 	return []*Generator{
 		{
-			Name:     "dj-count",
+			Name:     "user-count",
 			Query:    "select count(distinct history.user) as value from history",
 			Duration: time.Hour,
 		},
@@ -86,10 +86,113 @@ func GetGenerators() []*Generator {
 		{
 			Name: "top-karma",
 			Query: `
-				select array_to_json(array_agg(t)) as value from
-				(select id, dubtrack_users.username, karma from dubtrack_users order by karma desc limit 3) as t
+				select array_to_json(array_agg(t.value)) as value from (
+					select json_build_object(
+						'ID', id,
+						'Username', username,
+						'Karma', karma
+					) as value
+					from dubtrack_users
+					order by karma desc
+					limit 3
+				) as t
 			`,
 			Duration: time.Hour * 24,
+		},
+
+		{
+			Name: "newest-song",
+			Query: `
+				select json_build_object('ID', songs.id, 'Fkid', songs.fkid, 'Name', songs.name) as value
+				from songs
+				where (total_plays = 1) order by last_play desc limit 1
+			`,
+			Duration: time.Minute * 5,
+		},
+
+		{
+			Name: "most-upvoted-song",
+			Query: `
+				with score as (select max(score_up) from history)
+				select
+				json_build_object(
+					'ScoreUp', score.max,
+					'Name', songs.name,
+					'Fkid', songs.fkid,
+					'ID', songs.id
+				) as value
+				from score, history, songs
+				where (history.score_up = score.max) and (history.song = songs.id)
+				order by history.time desc
+				limit 1
+			`,
+			Duration: time.Hour * 24,
+		},
+
+		{
+			Name: "most-grabbed-song",
+			Query: `
+				with score as (select max(score_grab) from history)
+				select
+				json_build_object(
+					'ScoreGrab', score.max,
+					'Name', songs.name,
+					'Fkid', songs.fkid,
+					'ID', songs.id
+				) as value
+				from score, history, songs
+				where (history.score_grab = score.max) and (history.song = songs.id)
+				order by history.time desc
+				limit 1
+				`,
+			Duration: time.Hour * 24,
+		},
+
+		{
+			Name: "songs-played-once",
+			Query: `
+				select count(id) as value from songs where total_plays = 1
+			`,
+			Duration: time.Minute * 5,
+		},
+
+		{
+			Name: "user-playing-most-tracks",
+			Query: `
+				select json_build_object(
+				'ID', id,
+				'Username', username,
+				'Count', history.count
+				) as value
+				from dubtrack_users, (
+				SELECT
+					history.user,
+					count(history)
+				FROM history
+				GROUP BY history.user
+				) as history
+				where history.user = dubtrack_users.id
+				order by count desc
+				limit 1
+			`,
+			Duration: time.Hour * 24,
+
+			// Alternate, slower, version
+			/*
+				Query: `
+					SELECT
+					json_build_object(
+						'ID', users.id,
+						'Username', username,
+						'Count', history.count
+					) as value
+					FROM history, dubtrack_users as users
+					where users.id = history.user
+					GROUP BY history.user, users.username, users.id
+					order by count(history) desc
+					limit 1
+				`,
+			*/
 		},
 	}
 }
