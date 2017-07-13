@@ -38,7 +38,7 @@ func NewStatistics(
 		DB:     db,
 	}
 
-	for _, gen := range []*Generator{AllTimeGenerator, AllTimeGenerator2} {
+	for _, gen := range []*Generator{DJCountGenerator, TotalTrackVotes} {
 		gen.Next = time.After(0)
 		s.AddGenerator(gen)
 	}
@@ -56,14 +56,18 @@ func (a *Statistics) Start() error {
 		for _, stat := range a.Generators {
 			select {
 			case <-stat.Next:
-				stat.Generator(a)
+				if err := stat.Generator(a); err != nil {
+					a.Log.WithFields(logrus.Fields{
+						"module": "statistics",
+						"error":  err.Error(),
+					}).Warnf("Generator failed to run")
+				}
+
 				stat.Next = time.After(stat.Duration)
 			default:
 			}
 		}
 	}
-
-	return nil
 }
 
 // Shutdown shuts down the Statistics server
