@@ -30,8 +30,7 @@ func (a *API) Start() error {
 	return a.Server.ListenAndServe()
 }
 
-// Close closes the API
-
+// Shutdown shuts down the API
 func (a *API) Shutdown(ctx context.Context) error {
 	if err := a.Server.Shutdown(ctx); err != nil {
 		return err

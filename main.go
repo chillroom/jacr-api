@@ -10,6 +10,7 @@ import (
 	"github.com/qaisjp/jacr-api/pkg/api"
 	"github.com/qaisjp/jacr-api/pkg/config"
 	"github.com/qaisjp/jacr-api/pkg/database"
+	"github.com/qaisjp/jacr-api/pkg/statistics"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jmoiron/sqlx"
@@ -70,6 +71,26 @@ func main() {
 				"module": "init",
 				"error":  err.Error(),
 			}).Fatal("API server failed")
+		}
+	}()
+
+	statistics := statistics.NewStatistics(
+		cfg,
+		logger,
+		db,
+	)
+
+	go func() {
+		logger.WithFields(logrus.Fields{
+			"module": "init",
+			"bind":   cfg.Address,
+		}).Info("Starting the Statistics server")
+
+		if err := statistics.Start(); err != nil {
+			logger.WithFields(logrus.Fields{
+				"module": "init",
+				"error":  err.Error(),
+			}).Fatal("Statistics server failed")
 		}
 	}()
 
