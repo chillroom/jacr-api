@@ -8,15 +8,15 @@ import (
 )
 
 type Generator struct {
-	Name     string
-	Query    string
-	Duration time.Duration
+	Name      string
+	Query     string
+	Frequency time.Duration
 }
 
 func (g *Generator) Spawn(queue chan *Generator) {
 	for {
 		queue <- g
-		time.Sleep(g.Duration)
+		time.Sleep(g.Frequency)
 	}
 }
 
@@ -35,39 +35,39 @@ func (g *Generator) Run(db *sqlx.DB) error {
 func GetGenerators() []*Generator {
 	return []*Generator{
 		{
-			Name:     "user-count",
-			Query:    "select count(distinct history.user) as value from history",
-			Duration: time.Hour,
+			Name:      "user-count",
+			Query:     "select count(distinct history.user) as value from history",
+			Frequency: time.Hour,
 		},
 
 		{
-			Name:     "history-count",
-			Query:    "select count(id) as value from history",
-			Duration: time.Hour,
+			Name:      "history-count",
+			Query:     "select count(id) as value from history",
+			Frequency: time.Hour,
 		},
 
 		{
-			Name:     "total-upvotes",
-			Query:    "select sum(history.score_up) as value from history",
-			Duration: time.Hour * 6,
+			Name:      "total-upvotes",
+			Query:     "select sum(history.score_up) as value from history",
+			Frequency: time.Hour * 6,
 		},
 
 		{
-			Name:     "total-downvotes",
-			Query:    "select sum(history.score_down) as value from history",
-			Duration: time.Hour * 6,
+			Name:      "total-downvotes",
+			Query:     "select sum(history.score_down) as value from history",
+			Frequency: time.Hour * 6,
 		},
 
 		{
-			Name:     "total-grabs",
-			Query:    "select sum(history.score_grab) as value from history",
-			Duration: time.Hour * 6,
+			Name:      "total-grabs",
+			Query:     "select sum(history.score_grab) as value from history",
+			Frequency: time.Hour * 6,
 		},
 
 		{
-			Name:     "total-songs",
-			Query:    "select count(id) as value from songs",
-			Duration: time.Hour,
+			Name:      "total-songs",
+			Query:     "select count(id) as value from songs",
+			Frequency: time.Hour,
 		},
 
 		{
@@ -80,7 +80,7 @@ func GetGenerators() []*Generator {
 					HAVING count(history.user) = 1
 				) as count
 			`,
-			Duration: time.Hour * 12,
+			Frequency: time.Hour * 12,
 		},
 
 		{
@@ -97,7 +97,7 @@ func GetGenerators() []*Generator {
 					limit 3
 				) as t
 			`,
-			Duration: time.Hour * 24,
+			Frequency: time.Hour * 24,
 		},
 
 		{
@@ -107,7 +107,7 @@ func GetGenerators() []*Generator {
 				from songs
 				where (total_plays = 1) order by last_play desc limit 1
 			`,
-			Duration: time.Minute * 5,
+			Frequency: time.Minute * 5,
 		},
 
 		{
@@ -126,7 +126,7 @@ func GetGenerators() []*Generator {
 				order by history.time desc
 				limit 1
 			`,
-			Duration: time.Hour * 24,
+			Frequency: time.Hour * 24,
 		},
 
 		{
@@ -145,7 +145,7 @@ func GetGenerators() []*Generator {
 				order by history.time desc
 				limit 1
 				`,
-			Duration: time.Hour * 24,
+			Frequency: time.Hour * 24,
 		},
 
 		{
@@ -153,7 +153,7 @@ func GetGenerators() []*Generator {
 			Query: `
 				select count(id) as value from songs where total_plays = 1
 			`,
-			Duration: time.Minute * 5,
+			Frequency: time.Minute * 5,
 		},
 
 		{
@@ -175,7 +175,7 @@ func GetGenerators() []*Generator {
 				order by count desc
 				limit 1
 			`,
-			Duration: time.Hour * 24,
+			Frequency: time.Hour * 24,
 
 			// Alternate, slower, version
 			/*

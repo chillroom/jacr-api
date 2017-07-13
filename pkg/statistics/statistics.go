@@ -14,8 +14,7 @@ type Statistics struct {
 	Log    *logrus.Logger
 	DB     *sqlx.DB
 
-	Generators []*Generator
-	Queue      chan *Generator
+	Queue chan *Generator
 }
 
 // NewStatistics sets up a new Statistics module
@@ -31,11 +30,10 @@ func NewStatistics(
 		DB:     db,
 	}
 
-	s.Generators = GetGenerators()
 	s.Queue = make(chan *Generator, 2) // only process two at a time I guess?
 
 	// Initialise each generator by running them
-	for _, gen := range s.Generators {
+	for _, gen := range GetGenerators() {
 		go gen.Spawn(s.Queue)
 	}
 
@@ -44,19 +42,20 @@ func NewStatistics(
 
 // Start begins handling all of the statistic generators in the queue.
 func (a *Statistics) Start() {
-	for stat := range a.Queue {
-		err := stat.Run(a.DB)
+	for gen := range a.Queue {
+		err := gen.Run(a.DB)
 
 		if err != nil {
 			a.Log.WithFields(logrus.Fields{
 				"module":    "statistics",
 				"error":     err.Error(),
-				"generator": stat.Name,
+				"generator": gen.Name,
 			}).Warn("Generator failed to run")
 		} else {
 			a.Log.WithFields(logrus.Fields{
 				"module":    "statistics",
-				"generator": stat.Name,
+				"generator": gen.Name,
+				"frequency": gen.Frequency,
 			}).Info("Generator succeeded")
 		}
 	}
