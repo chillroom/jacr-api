@@ -2,11 +2,11 @@
 -- SQL in this section is executed when the migration is applied.
 
 -- +goose StatementBegin
-create or replace function add_response_message(groupName text, msg text) RETURNS VOID AS $rerg$
+create or replace function add_response_message(groupName text, msg text) RETURNS bool AS $rerg$
 declare grp int;
 begin
     if (msg = '') or (groupName = '') THEN
-      RETURN;
+      RETURN false;
     END IF;
 
     grp := (select "group"::int from response_commands where name = groupName limit 1);
@@ -18,10 +18,11 @@ begin
 				insert into response_commands (name, "group")
 				values (groupName, (select id from resgroup));
 
-        RETURN;
+        RETURN true;
     END IF;
 
     update response_groups set messages = array_append(messages, msg) where id = grp;
+    return true;
 end;
 $rerg$ LANGUAGE plpgsql;
 -- +goose StatementEnd
