@@ -13,10 +13,10 @@ begin
 
     if grp is null THEN
         with resgroup as (
-					insert into response_groups(messages) values (array[msg]) returning id
-				)
-				insert into response_commands (name, "group")
-				values (groupName, (select id from resgroup));
+            insert into response_groups(messages) values (array[msg]) returning id
+        )
+        insert into response_commands (name, "group")
+        values (groupName, (select id from resgroup));
 
         RETURN true;
     END IF;
