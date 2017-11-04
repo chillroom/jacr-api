@@ -11,7 +11,7 @@ type Song struct {
 	Fkid       string     `db:"fkid"`
 	Name       string     `db:"name"`
 	LastPlay   time.Time  `db:"last_play"`
-	SkipReason SkipReason `db:"score_up"`
+	SkipReason SkipReason `db:"skip_reason"`
 	Song       int        `db:"song"`
 	User       int        `db:"user"`
 	Time       time.Time  `db:"time"`

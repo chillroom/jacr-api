@@ -24,6 +24,9 @@ func (i *Impl) List(c *gin.Context) {
 		UserID     int               `db:"user_id"`
 		SongID     int               `db:"song_id"`
 		SongType   models.SongType   `db:"song_type"`
+		ScoreUp    int               `db:"score_up"`
+		ScoreDown  int               `db:"score_down"`
+		ScoreGrab  int               `db:"score_grab"`
 		SkipReason models.SkipReason `db:"skip_reason" json:",omitempty"`
 	}, 0)
 
