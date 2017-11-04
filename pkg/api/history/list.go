@@ -33,14 +33,14 @@ func (i *Impl) List(c *gin.Context) {
 	query := `
 		SELECT
 			history.time,
+			history.score_up as score_up,
+			history.score_down as score_down,
+			history.score_grab as score_grab,
 			songs.fkid,
 			songs.name,
 			users.username,
 			users.id as user_id,
 			songs.id as song_id,
-			songs.score_up as score_up,
-			songs.score_down as score_down,
-			songs.score_grab as score_grab,
 			songs.type as song_type
 		FROM history, songs, dubtrack_users as users
 		WHERE
