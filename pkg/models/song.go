@@ -39,6 +39,7 @@ func (s *SkipReason) Scan(src interface{}) error {
 
 	if src == nil {
 		s = nil
+		return
 	}
 
 	_, err := fmt.Sscanf(string(src.([]byte)), "%s", &s)
