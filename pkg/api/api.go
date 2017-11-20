@@ -11,6 +11,7 @@ import (
 	"github.com/qaisjp/jacr-api/pkg/api/notices"
 	"github.com/qaisjp/jacr-api/pkg/api/responses"
 	"github.com/qaisjp/jacr-api/pkg/api/slack"
+	"github.com/qaisjp/jacr-api/pkg/api/songs"
 	"github.com/qaisjp/jacr-api/pkg/api/statistics"
 	"github.com/qaisjp/jacr-api/pkg/config"
 
@@ -69,6 +70,9 @@ func NewAPI(
 
 	history := history.Impl{API: a}
 	router.GET("/v2/history/", history.List)
+
+	songs := songs.Impl{API: a}
+	router.GET("/v2/songs/", songs.List)
 
 	statistics := statistics.Impl{API: a}
 	router.GET("/v2/statistics", statistics.List)
