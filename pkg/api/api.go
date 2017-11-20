@@ -65,17 +65,17 @@ func NewAPI(
 	router.GET("/v2/slack/badge.svg", slack.Badge)
 
 	notices := notices.Impl{API: a}
-	router.GET("/v2/notices/", notices.List)
-	router.PATCH("/v2/notices/", verifyAuth, notices.Patch)
+	router.GET("/v2/notices", notices.List)
+	router.PATCH("/v2/notices", verifyAuth, notices.Patch)
 
 	responses := responses.Impl{API: a}
-	router.GET("/v2/responses/", responses.List)
+	router.GET("/v2/responses", responses.List)
 
 	history := history.Impl{API: a}
-	router.GET("/v2/history/", history.List)
+	router.GET("/v2/history", history.List)
 
 	songs := songs.Impl{API: a}
-	router.GET("/v2/songs/", songs.List)
+	router.GET("/v2/songs", songs.List)
 
 	statistics := statistics.Impl{API: a}
 	router.GET("/v2/statistics", statistics.List)
