@@ -60,7 +60,7 @@ func (i *Impl) List(c *gin.Context) {
 		}
 
 		query += fmt.Sprintf(`
-			ORDER BY time DESC
+			ORDER BY name
 			LIMIT %d
 			OFFSET %d
 		`, count, offset)
