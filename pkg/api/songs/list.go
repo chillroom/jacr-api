@@ -24,7 +24,7 @@ func (i *Impl) List(c *gin.Context) {
 		SkipReason   models.SkipReason `db:"skip_reason" json:",omitempty"`
 		RecentPlays  int               `db:"recent_plays"`
 		TotalPlays   int               `db:"total_plays"`
-		SongType     models.SongType   `db:"song_type"`
+		SongType     models.SongType   `db:"type"`
 		Retagged     bool              `db:"retagged"`
 		AutoRetagged bool              `db:"auto_retagged"`
 	}, 0)
