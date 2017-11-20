@@ -38,3 +38,9 @@ func (a *API) Shutdown(ctx context.Context) error {
 
 	return nil
 }
+
+func (i *API) Origin(c *gin.Context) {
+	origin := c.Request.Header.Get("Origin")
+	c.Header("Access-Control-Allow-Origin", origin)
+	c.Next()
+}

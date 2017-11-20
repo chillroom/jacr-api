@@ -36,6 +36,8 @@ func NewAPI(
 		Gin:    router,
 	}
 
+	router.Use(a.Origin)
+
 	auth := auth.Impl{API: a}
 
 	authMiddleware := &jwt.GinJWTMiddleware{
@@ -59,7 +61,7 @@ func NewAPI(
 
 	slack := slack.Impl{API: a}
 	router.POST("/v2/slack/invite", slack.Invite)
-	router.GET("/v2/slack/badge.svg", slack.CheckOrigin, slack.Badge)
+	router.GET("/v2/slack/badge.svg", slack.Badge)
 
 	notices := notices.Impl{API: a}
 	router.GET("/v2/notices/", notices.List)
