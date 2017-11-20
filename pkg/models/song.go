@@ -24,7 +24,6 @@ const (
 	NsfwSkip        SkipReason = "nsfw"
 	ThemeSkip       SkipReason = "theme"
 	UnavailableSkip SkipReason = "unavailable"
-	NotSkipped      SkipReason = ""
 )
 
 func (s SkipReason) Value() (driver.Value, error) {
@@ -38,19 +37,13 @@ func (s *SkipReason) Scan(src interface{}) error {
 	//   }
 
 	if src == nil {
-		*s = NotSkipped
+		s = nil
 		return nil
 	}
 
-	_, err := fmt.Sscanf(string(src.([]byte)), "%s", &s)
+	*s = SkipReason(src.([]byte))
 
-	// if err != nil {
-	// 	if string(*s) == "" {
-	// 		s = nil
-	// 	}
-	// }
-	//   return SkipReason(out)
-	return err
+	return nil
 }
 
 type SongType string
