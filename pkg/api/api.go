@@ -15,6 +15,7 @@ import (
 	"github.com/qaisjp/jacr-api/pkg/api/statistics"
 	"github.com/qaisjp/jacr-api/pkg/config"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
@@ -36,7 +37,7 @@ func NewAPI(
 		Gin:    router,
 	}
 
-	router.Use(a.Origin)
+	router.Use(cors.Default())
 
 	auth := auth.Impl{API: a}
 
