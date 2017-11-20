@@ -26,7 +26,7 @@ func (i *Impl) List(c *gin.Context) {
 		TotalPlays   int               `db:"total_plays"`
 		SongType     models.SongType   `db:"type"`
 		Retagged     bool              `db:"retagged"`
-		AutoRetagged bool              `db:"auto_retagged"`
+		AutoRetagged bool              `db:"autoretagged"`
 	}, 0)
 
 	query := `
